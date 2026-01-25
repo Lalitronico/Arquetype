@@ -13,6 +13,16 @@ import {
   Save,
   Loader2,
   AlertCircle,
+  FileText,
+  TrendingUp,
+  Smile,
+  Package,
+  BarChart2,
+  Award,
+  Lightbulb,
+  DollarSign,
+  MousePointer,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -35,13 +45,15 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { surveyTemplates, templateCategories, type SurveyTemplate } from "@/lib/survey-templates";
 
 interface Question {
   id: string;
-  type: "likert" | "nps" | "multiple_choice" | "open_ended";
+  type: "likert" | "nps" | "multiple_choice" | "open_ended" | "rating" | "open";
   text: string;
   options?: string[];
   required: boolean;
+  scale?: { min: number; max: number; labels?: { min: string; max: string } };
 }
 
 const QUESTION_TYPES = [
@@ -70,9 +82,22 @@ const SAMPLE_SIZES = [
   { value: 1000, label: "1,000 respondents", description: "Enterprise scale" },
 ];
 
+// Icon mapping for templates
+const iconMap: Record<string, React.ElementType> = {
+  TrendingUp,
+  Smile,
+  Package,
+  BarChart2,
+  Award,
+  Lightbulb,
+  DollarSign,
+  MousePointer,
+};
+
 export default function NewStudyPage() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0); // Start at 0 for template selection
+  const [selectedTemplate, setSelectedTemplate] = useState<SurveyTemplate | null>(null);
   const [studyName, setStudyName] = useState("");
   const [studyDescription, setStudyDescription] = useState("");
   const [questions, setQuestions] = useState<Question[]>([
@@ -82,6 +107,32 @@ export default function NewStudyPage() {
   const [sampleSize, setSampleSize] = useState(100);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const applyTemplate = (template: SurveyTemplate) => {
+    setSelectedTemplate(template);
+    setStudyName(template.name);
+    setStudyDescription(template.description);
+    setQuestions(template.questions.map(q => ({
+      id: q.id,
+      type: q.type === "rating" ? "likert" : q.type === "open" ? "open_ended" : q.type,
+      text: q.text,
+      options: q.options,
+      required: q.required,
+      scale: q.scale,
+    })));
+    setSampleSize(template.suggestedSampleSize);
+    setStep(1);
+  };
+
+  const startFromScratch = () => {
+    setSelectedTemplate(null);
+    setStudyName("");
+    setStudyDescription("");
+    setQuestions([{ id: crypto.randomUUID(), type: "likert", text: "", required: true }]);
+    setSampleSize(100);
+    setStep(1);
+  };
 
   const addQuestion = () => {
     const newQuestion: Question = {
@@ -191,8 +242,12 @@ export default function NewStudyPage() {
     }
   };
 
-  const totalSteps = 3;
-  const progress = (step / totalSteps) * 100;
+  const totalSteps = 4;
+  const progress = (step / (totalSteps - 1)) * 100;
+
+  const filteredTemplates = selectedCategory
+    ? surveyTemplates.filter((t) => t.category === selectedCategory)
+    : surveyTemplates;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -218,27 +273,121 @@ export default function NewStudyPage() {
       )}
 
       {/* Progress */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">
-            Step {step} of {totalSteps}
-          </span>
-          <span className="text-sm text-gray-500">
-            {step === 1 && "Study Details"}
-            {step === 2 && "Survey Questions"}
-            {step === 3 && "Panel Configuration"}
-          </span>
+      {step > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">
+              Step {step} of {totalSteps - 1}
+            </span>
+            <span className="text-sm text-gray-500">
+              {step === 1 && "Study Details"}
+              {step === 2 && "Survey Questions"}
+              {step === 3 && "Panel Configuration"}
+            </span>
+          </div>
+          <Progress value={progress} className="h-2" />
         </div>
-        <Progress value={progress} className="h-2" />
-      </div>
+      )}
+
+      {/* Step 0: Template Selection */}
+      {step === 0 && (
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold">Create New Study</h1>
+            <p className="text-gray-600 mt-2">
+              Start with a template or create from scratch
+            </p>
+          </div>
+
+          {/* Start from Scratch Option */}
+          <Card
+            className="border-2 border-dashed hover:border-blue-300 cursor-pointer transition-colors"
+            onClick={startFromScratch}
+          >
+            <CardContent className="flex items-center gap-4 p-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
+                <Sparkles className="h-6 w-6 text-gray-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold">Start from Scratch</h3>
+                <p className="text-sm text-gray-500">Create a custom study with your own questions</p>
+              </div>
+              <ArrowRight className="h-5 w-5 text-gray-400" />
+            </CardContent>
+          </Card>
+
+          {/* Category Filter */}
+          <div>
+            <h2 className="text-lg font-semibold mb-3">Or choose a template</h2>
+            <div className="flex flex-wrap gap-2 mb-4">
+              <Button
+                variant={selectedCategory === null ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedCategory(null)}
+              >
+                All
+              </Button>
+              {templateCategories.map((cat) => (
+                <Button
+                  key={cat.id}
+                  variant={selectedCategory === cat.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(cat.id)}
+                >
+                  {cat.name}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Templates Grid */}
+          <div className="grid gap-4 md:grid-cols-2">
+            {filteredTemplates.map((template) => {
+              const IconComponent = iconMap[template.icon] || FileText;
+              return (
+                <Card
+                  key={template.id}
+                  className="hover:border-blue-300 cursor-pointer transition-colors"
+                  onClick={() => applyTemplate(template)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                        <IconComponent className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <CardTitle className="text-base">{template.name}</CardTitle>
+                        <Badge variant="secondary" className="mt-1 text-xs">
+                          {templateCategories.find((c) => c.id === template.category)?.name}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-sm text-gray-500 mb-3">{template.description}</p>
+                    <div className="flex items-center gap-4 text-xs text-gray-400">
+                      <span>{template.questions.length} questions</span>
+                      <span>{template.suggestedSampleSize} suggested respondents</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Step 1: Study Details */}
       {step === 1 && (
         <Card>
           <CardHeader>
-            <CardTitle>Create New Study</CardTitle>
+            <CardTitle>
+              {selectedTemplate ? `Customize: ${selectedTemplate.name}` : "Study Details"}
+            </CardTitle>
             <CardDescription>
-              Start by giving your study a name and description
+              {selectedTemplate
+                ? "Customize the template to fit your needs"
+                : "Start by giving your study a name and description"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -261,7 +410,11 @@ export default function NewStudyPage() {
                 rows={4}
               />
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => setStep(0)}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Templates
+              </Button>
               <Button
                 variant="gradient"
                 onClick={() => setStep(2)}
@@ -282,7 +435,9 @@ export default function NewStudyPage() {
             <CardHeader>
               <CardTitle>Survey Questions</CardTitle>
               <CardDescription>
-                Add the questions you want synthetic respondents to answer
+                {selectedTemplate
+                  ? "Review and customize the template questions"
+                  : "Add the questions you want synthetic respondents to answer"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -462,6 +617,12 @@ export default function NewStudyPage() {
                   <dt className="text-gray-500">Study Name</dt>
                   <dd className="font-medium">{studyName}</dd>
                 </div>
+                {selectedTemplate && (
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Template</dt>
+                    <dd className="font-medium">{selectedTemplate.name}</dd>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <dt className="text-gray-500">Questions</dt>
                   <dd className="font-medium">{questions.filter(q => q.text.trim()).length}</dd>

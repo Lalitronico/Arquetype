@@ -130,6 +130,22 @@ export const responses = sqliteTable("responses", {
   createdAt: text("created_at").notNull().default(new Date().toISOString()),
 });
 
+// API Keys for external integrations
+export const apiKeys = sqliteTable("api_keys", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  name: text("name").notNull(), // User-friendly name for the key
+  keyHash: text("key_hash").notNull(), // Hashed version of the API key
+  keyPrefix: text("key_prefix").notNull(), // First 8 chars for identification (e.g., "sk_live_...")
+  scopes: text("scopes").notNull().default("read,write"), // Comma-separated permissions
+  lastUsedAt: text("last_used_at"),
+  expiresAt: text("expires_at"), // Optional expiration
+  createdAt: text("created_at").notNull().default(new Date().toISOString()),
+  revokedAt: text("revoked_at"), // If revoked, when
+});
+
 // API usage logs
 export const apiUsageLogs = sqliteTable("api_usage_logs", {
   id: text("id").primaryKey(),
@@ -137,6 +153,7 @@ export const apiUsageLogs = sqliteTable("api_usage_logs", {
     .notNull()
     .references(() => organizations.id, { onDelete: "cascade" }),
   studyId: text("study_id").references(() => studies.id),
+  apiKeyId: text("api_key_id").references(() => apiKeys.id), // Track which API key was used
   endpoint: text("endpoint").notNull(),
   creditsUsed: integer("credits_used").notNull(),
   metadata: text("metadata"), // JSON string
@@ -152,3 +169,5 @@ export type Study = typeof studies.$inferSelect;
 export type NewStudy = typeof studies.$inferInsert;
 export type SyntheticRespondent = typeof syntheticRespondents.$inferSelect;
 export type Response = typeof responses.$inferSelect;
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type NewApiKey = typeof apiKeys.$inferInsert;

@@ -14,6 +14,11 @@ import {
   AlertCircle,
   FileText,
   FileJson,
+  Heart,
+  ThumbsUp,
+  ThumbsDown,
+  Minus,
+  Hash,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +43,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { aggregateSentiment } from "@/lib/sentiment-analysis";
 
 interface StudyData {
   id: string;
@@ -244,6 +250,15 @@ export default function StudyResultsPage({
 
   const currentQuestion = questionStats.find((q) => q.id === selectedQuestion);
 
+  // Sentiment analysis for open-ended and explanation responses
+  const allTextResponses = study.results?.responses
+    .flatMap((r) => [r.textResponse, r.explanation])
+    .filter((t): t is string => !!t && t.length > 0) || [];
+
+  const sentimentData = allTextResponses.length > 0
+    ? aggregateSentiment(allTextResponses)
+    : null;
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -394,6 +409,7 @@ export default function StudyResultsPage({
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="questions">By Question</TabsTrigger>
+          <TabsTrigger value="sentiment">Sentiment Analysis</TabsTrigger>
           <TabsTrigger value="responses">Sample Responses</TabsTrigger>
         </TabsList>
 
@@ -560,6 +576,192 @@ export default function StudyResultsPage({
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Sentiment Analysis Tab */}
+        <TabsContent value="sentiment" className="space-y-6">
+          {sentimentData ? (
+            <div className="grid gap-6 lg:grid-cols-2">
+              {/* Overall Sentiment */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Heart className="h-5 w-5 text-pink-500" />
+                    Overall Sentiment
+                  </CardTitle>
+                  <CardDescription>
+                    Aggregate sentiment from {allTextResponses.length} text responses
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-center gap-8 py-4">
+                    <div className="text-center">
+                      <div className={`text-5xl font-bold ${
+                        sentimentData.overall.label === "positive"
+                          ? "text-green-600"
+                          : sentimentData.overall.label === "negative"
+                          ? "text-red-600"
+                          : "text-gray-600"
+                      }`}>
+                        {sentimentData.overall.label === "positive" && (
+                          <ThumbsUp className="h-12 w-12 mx-auto mb-2" />
+                        )}
+                        {sentimentData.overall.label === "negative" && (
+                          <ThumbsDown className="h-12 w-12 mx-auto mb-2" />
+                        )}
+                        {sentimentData.overall.label === "neutral" && (
+                          <Minus className="h-12 w-12 mx-auto mb-2" />
+                        )}
+                        {sentimentData.overall.label.charAt(0).toUpperCase() + sentimentData.overall.label.slice(1)}
+                      </div>
+                      <div className="text-sm text-gray-500 mt-2">
+                        Score: {(sentimentData.overall.score * 100).toFixed(0)}%
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        Confidence: {(sentimentData.overall.confidence * 100).toFixed(0)}%
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Sentiment Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Sentiment Distribution</CardTitle>
+                  <CardDescription>
+                    Breakdown of positive, neutral, and negative responses
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <ThumbsUp className="h-5 w-5 text-green-600" />
+                      <div className="flex-1">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Positive</span>
+                          <span className="font-medium">{sentimentData.distribution.positive}</span>
+                        </div>
+                        <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-green-500 rounded-full"
+                            style={{
+                              width: `${(sentimentData.distribution.positive / allTextResponses.length) * 100}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Minus className="h-5 w-5 text-gray-500" />
+                      <div className="flex-1">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Neutral</span>
+                          <span className="font-medium">{sentimentData.distribution.neutral}</span>
+                        </div>
+                        <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gray-400 rounded-full"
+                            style={{
+                              width: `${(sentimentData.distribution.neutral / allTextResponses.length) * 100}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <ThumbsDown className="h-5 w-5 text-red-600" />
+                      <div className="flex-1">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Negative</span>
+                          <span className="font-medium">{sentimentData.distribution.negative}</span>
+                        </div>
+                        <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-red-500 rounded-full"
+                            style={{
+                              width: `${(sentimentData.distribution.negative / allTextResponses.length) * 100}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Top Keywords */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Hash className="h-5 w-5 text-blue-500" />
+                    Top Keywords
+                  </CardTitle>
+                  <CardDescription>
+                    Most frequently mentioned terms across all responses
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {sentimentData.topKeywords.map((keyword, i) => (
+                      <Badge
+                        key={keyword}
+                        variant={i < 5 ? "default" : "secondary"}
+                        className="text-sm"
+                      >
+                        {keyword}
+                      </Badge>
+                    ))}
+                  </div>
+                  {sentimentData.topKeywords.length === 0 && (
+                    <p className="text-gray-500 text-sm">No keywords extracted</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Emotional Tone */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Emotional Tone</CardTitle>
+                  <CardDescription>
+                    Distribution of emotional indicators in responses
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-3">
+                    {Object.entries(sentimentData.averageEmotionalTone)
+                      .filter(([, value]) => value > 0)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([emotion, value]) => (
+                        <div key={emotion} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <span className="capitalize text-sm">{emotion}</span>
+                          <span className="font-medium text-blue-600">
+                            {(value * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                      ))}
+                    {Object.values(sentimentData.averageEmotionalTone).every(v => v === 0) && (
+                      <p className="text-gray-500 text-sm col-span-2">
+                        No strong emotional indicators detected
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Heart className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No Text Data for Analysis
+                </h3>
+                <p className="text-gray-500">
+                  Sentiment analysis requires open-ended responses or explanations.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Sample Responses Tab */}

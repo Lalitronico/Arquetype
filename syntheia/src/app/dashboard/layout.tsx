@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Loader2,
+  Key,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ const navigation = [
 
 const secondaryNav = [
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
+  { name: "API Keys", href: "/dashboard/settings/api", icon: Key },
   { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
 ];
 
