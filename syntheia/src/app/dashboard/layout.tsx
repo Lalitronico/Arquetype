@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Sparkles,
   LayoutDashboard,
@@ -14,6 +14,7 @@ import {
   Plus,
   Menu,
   X,
+  Loader2,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useSession, signOut } from "@/lib/auth-client";
 
 const navigation = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -40,13 +42,54 @@ const secondaryNav = [
   { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
 ];
 
+function getInitials(name: string | null | undefined, email: string): string {
+  if (name) {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  }
+  return email.slice(0, 2).toUpperCase();
+}
+
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const { data: session, isPending } = useSession();
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      await signOut();
+      router.push("/login");
+    } catch (error) {
+      console.error("Failed to sign out:", error);
+      setIsSigningOut(false);
+    }
+  };
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const user = session?.user;
+  const userInitials = getInitials(user?.name, user?.email || "U");
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -132,13 +175,13 @@ export default function DashboardLayout({
                 Credits Remaining
               </div>
               <div className="mt-1 flex items-baseline gap-1">
-                <span className="text-2xl font-bold text-gray-900">847</span>
+                <span className="text-2xl font-bold text-gray-900">1,000</span>
                 <span className="text-sm text-gray-500">/ 1,000</span>
               </div>
               <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-blue-600 rounded-full"
-                  style={{ width: "84.7%" }}
+                  style={{ width: "100%" }}
                 />
               </div>
             </div>
@@ -177,9 +220,9 @@ export default function DashboardLayout({
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src="" />
+                      <AvatarImage src={user?.image || ""} />
                       <AvatarFallback className="bg-blue-100 text-blue-700">
-                        JD
+                        {userInitials}
                       </AvatarFallback>
                     </Avatar>
                   </button>
@@ -187,25 +230,37 @@ export default function DashboardLayout({
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
                     <div className="flex flex-col">
-                      <span>John Doe</span>
+                      <span>{user?.name || "User"}</span>
                       <span className="text-xs font-normal text-gray-500">
-                        john@example.com
+                        {user?.email}
                       </span>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Settings className="h-4 w-4 mr-2" />
-                    Settings
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/settings">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Settings
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Billing
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/billing">
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Billing
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-red-600">
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Sign out
+                  <DropdownMenuItem
+                    className="text-red-600 cursor-pointer"
+                    onClick={handleSignOut}
+                    disabled={isSigningOut}
+                  >
+                    {isSigningOut ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <LogOut className="h-4 w-4 mr-2" />
+                    )}
+                    {isSigningOut ? "Signing out..." : "Sign out"}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

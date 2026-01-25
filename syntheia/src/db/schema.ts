@@ -25,7 +25,7 @@ export const sessions = sqliteTable("sessions", {
   userAgent: text("user_agent"),
 });
 
-// Accounts for OAuth
+// Accounts for OAuth and email/password
 export const accounts = sqliteTable("accounts", {
   id: text("id").primaryKey(),
   userId: text("user_id")
@@ -39,6 +39,7 @@ export const accounts = sqliteTable("accounts", {
   refreshTokenExpiresAt: text("refresh_token_expires_at"),
   scope: text("scope"),
   idToken: text("id_token"),
+  password: text("password"), // For email/password authentication
   createdAt: text("created_at").notNull().default(new Date().toISOString()),
   updatedAt: text("updated_at").notNull().default(new Date().toISOString()),
 });

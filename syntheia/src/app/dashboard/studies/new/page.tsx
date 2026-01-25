@@ -11,6 +11,8 @@ import {
   Users,
   Play,
   Save,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -31,7 +33,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
@@ -51,22 +52,22 @@ const QUESTION_TYPES = [
 ];
 
 const PERSONA_PRESETS = [
-  { value: "general", label: "General Population", description: "US adults 18-75" },
+  { value: "generalPopulation", label: "General Population", description: "US adults 18-75" },
   { value: "millennials", label: "Millennials", description: "Ages 28-43" },
   { value: "genZ", label: "Gen Z", description: "Ages 18-27" },
   { value: "highIncome", label: "High Income", description: "$125K+ household income" },
   { value: "techWorkers", label: "Tech Workers", description: "Software & tech professionals" },
-  { value: "parents", label: "Parents & Families", description: "Adults with children" },
+  { value: "parentsFamilies", label: "Parents & Families", description: "Adults with children" },
   { value: "healthConscious", label: "Health Conscious", description: "Wellness-focused consumers" },
   { value: "ecoConscious", label: "Eco Conscious", description: "Sustainability-minded" },
 ];
 
 const SAMPLE_SIZES = [
-  { value: "50", label: "50 respondents", credits: 50, description: "Quick pulse check" },
-  { value: "100", label: "100 respondents", credits: 100, description: "Standard study" },
-  { value: "250", label: "250 respondents", credits: 250, description: "Detailed analysis" },
-  { value: "500", label: "500 respondents", credits: 500, description: "Statistical significance" },
-  { value: "1000", label: "1,000 respondents", credits: 1000, description: "Enterprise scale" },
+  { value: 50, label: "50 respondents", description: "Quick pulse check" },
+  { value: 100, label: "100 respondents", description: "Standard study" },
+  { value: 250, label: "250 respondents", description: "Detailed analysis" },
+  { value: 500, label: "500 respondents", description: "Statistical significance" },
+  { value: 1000, label: "1,000 respondents", description: "Enterprise scale" },
 ];
 
 export default function NewStudyPage() {
@@ -75,15 +76,16 @@ export default function NewStudyPage() {
   const [studyName, setStudyName] = useState("");
   const [studyDescription, setStudyDescription] = useState("");
   const [questions, setQuestions] = useState<Question[]>([
-    { id: "1", type: "likert", text: "", required: true },
+    { id: crypto.randomUUID(), type: "likert", text: "", required: true },
   ]);
-  const [selectedPreset, setSelectedPreset] = useState("general");
-  const [sampleSize, setSampleSize] = useState("100");
-  const [isRunning, setIsRunning] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState("generalPopulation");
+  const [sampleSize, setSampleSize] = useState(100);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const addQuestion = () => {
     const newQuestion: Question = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       type: "likert",
       text: "",
       required: true,
@@ -103,11 +105,90 @@ export default function NewStudyPage() {
     );
   };
 
+  const handleSaveDraft = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const validQuestions = questions.filter((q) => q.text.trim());
+
+      const response = await fetch("/api/studies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: studyName,
+          description: studyDescription,
+          questions: validQuestions,
+          panelConfig: {
+            preset: selectedPreset,
+            count: sampleSize,
+          },
+          sampleSize,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to save study");
+      }
+
+      router.push("/dashboard/studies");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleRunStudy = async () => {
-    setIsRunning(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    router.push("/dashboard/studies/1/results");
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const validQuestions = questions.filter((q) => q.text.trim());
+
+      // First create the study
+      const createResponse = await fetch("/api/studies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: studyName,
+          description: studyDescription,
+          questions: validQuestions,
+          panelConfig: {
+            preset: selectedPreset,
+            count: sampleSize,
+          },
+          sampleSize,
+        }),
+      });
+
+      const createData = await createResponse.json();
+
+      if (!createResponse.ok) {
+        throw new Error(createData.error || "Failed to create study");
+      }
+
+      const studyId = createData.data.id;
+
+      // Then run the simulation
+      const runResponse = await fetch(`/api/studies/${studyId}/run`, {
+        method: "POST",
+      });
+
+      const runData = await runResponse.json();
+
+      if (!runResponse.ok) {
+        throw new Error(runData.error || "Failed to run study");
+      }
+
+      // Redirect to results
+      router.push(`/dashboard/studies/${studyId}/results`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+      setIsLoading(false);
+    }
   };
 
   const totalSteps = 3;
@@ -124,6 +205,17 @@ export default function NewStudyPage() {
           </Button>
         </Link>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 flex items-center gap-3 text-red-700">
+          <AlertCircle className="h-5 w-5 flex-shrink-0" />
+          <div>
+            <p className="font-medium">Error</p>
+            <p className="text-sm">{error}</p>
+          </div>
+        </div>
+      )}
 
       {/* Progress */}
       <div className="mb-8">
@@ -350,7 +442,7 @@ export default function NewStudyPage() {
                         {size.description}
                       </div>
                       <div className="mt-2 text-sm font-medium text-blue-600">
-                        {size.credits} credits
+                        {size.value} credits
                       </div>
                     </div>
                   ))}
@@ -393,23 +485,27 @@ export default function NewStudyPage() {
           </Card>
 
           <div className="flex justify-between">
-            <Button variant="outline" onClick={() => setStep(2)}>
+            <Button variant="outline" onClick={() => setStep(2)} disabled={isLoading}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
             <div className="flex gap-3">
-              <Button variant="outline">
-                <Save className="h-4 w-4 mr-2" />
+              <Button variant="outline" onClick={handleSaveDraft} disabled={isLoading}>
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
                 Save as Draft
               </Button>
               <Button
                 variant="gradient"
                 onClick={handleRunStudy}
-                disabled={isRunning}
+                disabled={isLoading}
               >
-                {isRunning ? (
+                {isLoading ? (
                   <>
-                    <span className="animate-spin mr-2">...</span>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Running...
                   </>
                 ) : (

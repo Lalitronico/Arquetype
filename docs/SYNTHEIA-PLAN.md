@@ -347,21 +347,21 @@ class SSREngine:
 ## 9. Roadmap Técnico
 
 ### Sprint 1-2: Foundation
-- [ ] Setup proyecto (Next.js 14 + TypeScript)
-- [ ] Implementar SSR engine básico con Claude API
-- [ ] Editor de encuestas simple
-- [ ] Auth con Better Auth
+- [x] Setup proyecto (Next.js 15 + TypeScript)
+- [x] Implementar SSR engine básico con Claude API
+- [x] Editor de encuestas simple
+- [x] Auth con Better Auth
 
 ### Sprint 3-4: Core Product
-- [ ] Definición de personas sintéticas
-- [ ] Dashboard de resultados básico
-- [ ] Exportación CSV/Excel
+- [x] Definición de personas sintéticas
+- [x] Dashboard de resultados básico
+- [x] Exportación CSV/Excel
 
 ### Sprint 5-6: Polish & Launch
-- [ ] Landing page con framing científico
-- [ ] Onboarding guiado
-- [ ] Plan gratuito limitado
-- [ ] Stripe billing
+- [x] Landing page con framing científico
+- [x] Onboarding guiado
+- [x] Plan gratuito limitado (1000 credits by default)
+- [x] Stripe billing
 
 ### Sprint 7-8: Growth Features
 - [ ] Integraciones (Zapier, API)
