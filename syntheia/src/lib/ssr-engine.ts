@@ -7,7 +7,6 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import OpenAI from "openai";
 
 // Types
 export interface SyntheticPersona {
@@ -95,15 +94,74 @@ const NPS_ANCHORS = Array.from({ length: 11 }, (_, i) => {
 
 export class SSREngine {
   private anthropic: Anthropic;
-  private openai: OpenAI;
+  private requestCount: number = 0;
+  private lastResetTime: number = Date.now();
+  private readonly MAX_REQUESTS_PER_MINUTE = 40; // Stay under 50 limit
 
   constructor() {
     this.anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+  }
+
+  /**
+   * Wait if we're approaching rate limit
+   */
+  private async checkRateLimit(): Promise<void> {
+    const now = Date.now();
+    const elapsed = now - this.lastResetTime;
+
+    // Reset counter every minute
+    if (elapsed >= 60000) {
+      this.requestCount = 0;
+      this.lastResetTime = now;
+    }
+
+    // If we're at the limit, wait until the next minute
+    if (this.requestCount >= this.MAX_REQUESTS_PER_MINUTE) {
+      const waitTime = 60000 - elapsed + 1000; // Wait until reset + 1 second buffer
+      console.log(`Rate limit approaching, waiting ${waitTime}ms...`);
+      await this.delay(waitTime);
+      this.requestCount = 0;
+      this.lastResetTime = Date.now();
+    }
+
+    this.requestCount++;
+  }
+
+  /**
+   * Delay helper
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Make API call with retry logic
+   */
+  private async callWithRetry<T>(
+    fn: () => Promise<T>,
+    maxRetries: number = 3
+  ): Promise<T> {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        await this.checkRateLimit();
+        return await fn();
+      } catch (error: unknown) {
+        const isRateLimit = error instanceof Error &&
+          (error.message.includes('429') || error.message.includes('rate_limit'));
+
+        if (isRateLimit && attempt < maxRetries) {
+          const waitTime = Math.pow(2, attempt) * 5000; // 5s, 10s, 20s
+          console.log(`Rate limited, retrying in ${waitTime}ms (attempt ${attempt + 1}/${maxRetries})...`);
+          await this.delay(waitTime);
+          this.requestCount = 0; // Reset counter after waiting
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw new Error('Max retries exceeded');
   }
 
   /**
@@ -146,20 +204,22 @@ Be authentic and provide thoughtful responses that reflect this person's backgro
   ): Promise<string> {
     const personaPrompt = this.buildPersonaPrompt(persona);
 
-    const response = await this.anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 500,
-      system: personaPrompt,
-      messages: [
-        {
-          role: "user",
-          content: `Please respond to this survey question in first person, explaining your thoughts and feelings honestly:
+    const response = await this.callWithRetry(async () => {
+      return this.anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 500,
+        system: personaPrompt,
+        messages: [
+          {
+            role: "user",
+            content: `Please respond to this survey question in first person, explaining your thoughts and feelings honestly:
 
 Question: ${question.text}
 
 Provide a thoughtful response (2-4 sentences) that explains your perspective on this topic.`,
-        },
-      ],
+          },
+        ],
+      });
     });
 
     const textBlock = response.content.find((block) => block.type === "text");
@@ -167,106 +227,95 @@ Provide a thoughtful response (2-4 sentences) that explains your perspective on 
   }
 
   /**
-   * Get embeddings for text using OpenAI
-   */
-  private async getEmbedding(text: string): Promise<number[]> {
-    const response = await this.openai.embeddings.create({
-      model: "text-embedding-3-small",
-      input: text,
-    });
-    return response.data[0].embedding;
-  }
-
-  /**
-   * Calculate cosine similarity between two vectors
-   */
-  private cosineSimilarity(a: number[], b: number[]): number {
-    let dotProduct = 0;
-    let normA = 0;
-    let normB = 0;
-
-    for (let i = 0; i < a.length; i++) {
-      dotProduct += a[i] * b[i];
-      normA += a[i] * a[i];
-      normB += b[i] * b[i];
-    }
-
-    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-  }
-
-  /**
-   * Softmax function to convert similarities to probabilities
-   */
-  private softmax(values: number[], temperature: number = 1.0): number[] {
-    const scaled = values.map((v) => v / temperature);
-    const maxVal = Math.max(...scaled);
-    const exps = scaled.map((v) => Math.exp(v - maxVal));
-    const sum = exps.reduce((a, b) => a + b, 0);
-    return exps.map((e) => e / sum);
-  }
-
-  /**
-   * Sample from a probability distribution
-   */
-  private weightedChoice(distribution: number[]): number {
-    const random = Math.random();
-    let cumulative = 0;
-
-    for (let i = 0; i < distribution.length; i++) {
-      cumulative += distribution[i];
-      if (random <= cumulative) {
-        return i + 1; // 1-indexed for Likert scales
-      }
-    }
-
-    return distribution.length;
-  }
-
-  /**
-   * Get appropriate anchors for the question type
-   */
-  private getAnchors(question: SurveyQuestion): string[] {
-    if (question.type === "nps") {
-      return NPS_ANCHORS;
-    }
-
-    const scaleSize = (question.scaleMax || 5) - (question.scaleMin || 1) + 1;
-
-    if (scaleSize === 7) {
-      return LIKERT_7_ANCHORS;
-    }
-
-    return LIKERT_5_ANCHORS;
-  }
-
-  /**
-   * Map text response to Likert rating using SSR methodology
+   * Map text response to Likert rating using Claude
+   * This replaces the embedding-based approach with direct LLM analysis
    */
   async mapToLikert(
     textResponse: string,
     question: SurveyQuestion
   ): Promise<{ rating: number; distribution: number[]; confidence: number }> {
-    const anchors = this.getAnchors(question);
+    const scaleMax = question.type === "nps" ? 10 : (question.scaleMax || 5);
+    const scaleMin = question.scaleMin || (question.type === "nps" ? 0 : 1);
 
-    // Get embeddings for response and all anchors
-    const [responseEmbedding, ...anchorEmbeddings] = await Promise.all([
-      this.getEmbedding(textResponse),
-      ...anchors.map((a) => this.getEmbedding(a)),
-    ]);
+    const prompt = `Analyze the following survey response and determine the appropriate rating.
 
-    // Calculate similarities
-    const similarities = anchorEmbeddings.map((ae) =>
-      this.cosineSimilarity(responseEmbedding, ae)
-    );
+Question: "${question.text}"
 
-    // Convert to probability distribution
-    const distribution = this.softmax(similarities, 0.5);
+Response: "${textResponse}"
 
-    // Get final rating
-    const rating = this.weightedChoice(distribution);
-    const confidence = Math.max(...distribution);
+Scale: ${scaleMin} to ${scaleMax}
+${question.type === "nps"
+  ? "This is an NPS (Net Promoter Score) question. 0-6 = Detractor, 7-8 = Passive, 9-10 = Promoter."
+  : `This is a Likert scale where ${scaleMin} = Strongly Disagree/Very Negative and ${scaleMax} = Strongly Agree/Very Positive.`}
 
-    return { rating, distribution, confidence };
+Based on the sentiment and content of the response, provide:
+1. A rating from ${scaleMin} to ${scaleMax}
+2. Your confidence level (0.0 to 1.0)
+
+Respond ONLY in this exact JSON format:
+{"rating": <number>, "confidence": <number>}`;
+
+    try {
+      const response = await this.callWithRetry(async () => {
+        return this.anthropic.messages.create({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 100,
+          messages: [{ role: "user", content: prompt }],
+        });
+      });
+
+      const textBlock = response.content.find((block) => block.type === "text");
+      const text = textBlock?.type === "text" ? textBlock.text : "";
+
+      // Parse the JSON response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        const rating = Math.min(Math.max(parsed.rating, scaleMin), scaleMax);
+        const confidence = Math.min(Math.max(parsed.confidence || 0.7, 0), 1);
+
+        // Generate a simple distribution centered on the rating
+        const distribution = this.generateDistribution(rating, scaleMin, scaleMax, confidence);
+
+        return { rating, distribution, confidence };
+      }
+    } catch (error) {
+      console.error("Error mapping to Likert:", error);
+    }
+
+    // Fallback: return middle rating
+    const midRating = Math.round((scaleMin + scaleMax) / 2);
+    return {
+      rating: midRating,
+      distribution: this.generateDistribution(midRating, scaleMin, scaleMax, 0.5),
+      confidence: 0.5
+    };
+  }
+
+  /**
+   * Generate a probability distribution centered on a rating
+   */
+  private generateDistribution(
+    rating: number,
+    scaleMin: number,
+    scaleMax: number,
+    confidence: number
+  ): number[] {
+    const size = scaleMax - scaleMin + 1;
+    const distribution = new Array(size).fill(0);
+    const index = rating - scaleMin;
+
+    // Higher confidence = more concentrated distribution
+    const spread = 1 - confidence;
+
+    for (let i = 0; i < size; i++) {
+      const distance = Math.abs(i - index);
+      distribution[i] = Math.exp(-distance * (2 + confidence * 3));
+    }
+
+    // Normalize
+    const sum = distribution.reduce((a, b) => a + b, 0);
+    return distribution.map(d => d / sum);
   }
 
   /**
@@ -365,22 +414,25 @@ Choose one option and briefly explain why (1-2 sentences). Format: "I choose [nu
   }
 
   /**
-   * Run simulation for multiple personas in parallel
+   * Run simulation for multiple personas sequentially to respect rate limits
    */
   async simulatePanel(
     personas: SyntheticPersona[],
     questions: SurveyQuestion[],
-    concurrency: number = 5
+    _concurrency: number = 1 // Ignored, always sequential for rate limit safety
   ): Promise<SimulationResult[]> {
     const results: SimulationResult[] = [];
 
-    // Process in batches to respect rate limits
-    for (let i = 0; i < personas.length; i += concurrency) {
-      const batch = personas.slice(i, i + concurrency);
-      const batchResults = await Promise.all(
-        batch.map((persona) => this.simulatePersona(persona, questions))
-      );
-      results.push(...batchResults);
+    // Process sequentially to respect rate limits
+    for (let i = 0; i < personas.length; i++) {
+      console.log(`Processing persona ${i + 1}/${personas.length}...`);
+      const result = await this.simulatePersona(personas[i], questions);
+      results.push(result);
+
+      // Add small delay between personas
+      if (i < personas.length - 1) {
+        await this.delay(500);
+      }
     }
 
     return results;

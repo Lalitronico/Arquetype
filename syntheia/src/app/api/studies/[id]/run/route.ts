@@ -123,13 +123,13 @@ export async function POST(
       : undefined;
 
     const panel = generatePanel({
-      count: study.sampleSize,
       ...presetConfig,
       demographics: {
         ...presetConfig?.demographics,
         ...panelConfig.demographics,
       },
       context: panelConfig.context,
+      count: study.sampleSize, // Must be LAST to override preset defaults
     });
 
     // Map questions to SSR engine format
