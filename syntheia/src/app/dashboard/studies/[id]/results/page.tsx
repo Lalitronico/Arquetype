@@ -648,9 +648,17 @@ export default function StudyResultsPage({
       (r) => r.questionId === question.id
     ) || [];
 
+    // Normalize question type: treat "rating" same as "likert"
+    const normalizedType = question.type === "rating" ? "likert" : question.type;
+
     const ratings = questionResponses
       .map((r) => r.rating)
       .filter((r): r is number => r !== null && r > 0);
+
+    // For open-ended questions, count text responses instead of ratings
+    const textResponses = questionResponses
+      .map((r) => r.textResponse)
+      .filter((t): t is string => t !== null && t.length > 0);
 
     const mean = ratings.length > 0
       ? ratings.reduce((a, b) => a + b, 0) / ratings.length
@@ -661,10 +669,10 @@ export default function StudyResultsPage({
       : 0;
 
     // Distribution calculation
-    const maxRating = question.type === "nps" ? 11 : 5;
+    const maxRating = normalizedType === "nps" ? 11 : 5;
     const distribution = Array(maxRating).fill(0);
     ratings.forEach((r) => {
-      const index = question.type === "nps" ? r : r - 1;
+      const index = normalizedType === "nps" ? r : r - 1;
       if (index >= 0 && index < maxRating) {
         distribution[index]++;
       }
@@ -681,7 +689,7 @@ export default function StudyResultsPage({
 
     // NPS specific
     let npsData = null;
-    if (question.type === "nps" && ratings.length > 0) {
+    if (normalizedType === "nps" && ratings.length > 0) {
       const promoters = ratings.filter((r) => r >= 9).length;
       const detractors = ratings.filter((r) => r <= 6).length;
       const passives = ratings.length - promoters - detractors;
@@ -715,7 +723,8 @@ export default function StudyResultsPage({
 
     return {
       ...question,
-      totalResponses: ratings.length,
+      type: normalizedType, // Use normalized type
+      totalResponses: normalizedType === "open_ended" ? textResponses.length : ratings.length,
       mean: Math.round(mean * 100) / 100,
       median,
       stdDev: Math.round(stdDev * 100) / 100,
