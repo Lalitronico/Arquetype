@@ -20,6 +20,7 @@ import { ContextConfig } from "./ContextConfig";
 import { CSVImporter, ImportedPersona } from "./CSVImporter";
 import { SavedPanelsSelect } from "./SavedPanelsSelect";
 import { PersonaPreview } from "./PersonaPreview";
+import { SampleSizeCalculator } from "./SampleSizeCalculator";
 
 interface PersonaBuilderProps {
   value: PersonaConfig;
@@ -58,6 +59,8 @@ export function PersonaBuilder({
   const [selectedPreset, setSelectedPreset] = useState<PresetName | null>("generalPopulation");
   const [selectedIndustryTemplate, setSelectedIndustryTemplate] = useState<string | null>(null);
   const [importedPersonas, setImportedPersonas] = useState<ImportedPersona[]>([]);
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [customSampleSize, setCustomSampleSize] = useState<number | null>(null);
 
   // Track source of configuration
   const [configSource, setConfigSource] = useState<"preset" | "industry" | "custom" | "csv" | "saved">("preset");
@@ -277,29 +280,63 @@ export function PersonaBuilder({
       {/* Sample Size Selection */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Sample Size</CardTitle>
-          <CardDescription>How many synthetic respondents to include</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 sm:grid-cols-5">
-            {SAMPLE_SIZES.map((size) => (
-              <div
-                key={size.value}
-                onClick={() => onSampleSizeChange(size.value)}
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-all text-center ${
-                  sampleSize === size.value
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <div className="font-bold text-lg">{size.label}</div>
-                <div className="text-xs text-gray-500">{size.description}</div>
-                <div className="mt-2 text-sm font-medium text-blue-600">
-                  {size.value} credits
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base">Sample Size</CardTitle>
+              <CardDescription>How many synthetic respondents to include</CardDescription>
+            </div>
+            <button
+              onClick={() => setShowCalculator(!showCalculator)}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+            >
+              {showCalculator ? "Use presets" : "Calculate optimal size"}
+            </button>
           </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {showCalculator ? (
+            <>
+              <SampleSizeCalculator
+                onCalculate={(size) => {
+                  setCustomSampleSize(size);
+                  onSampleSizeChange(size);
+                }}
+                maxSampleSize={1000}
+              />
+              {customSampleSize && !SAMPLE_SIZES.some(s => s.value === customSampleSize) && (
+                <div className="p-4 rounded-lg border-2 border-blue-500 bg-blue-50 text-center">
+                  <div className="font-bold text-lg">{customSampleSize.toLocaleString()}</div>
+                  <div className="text-xs text-gray-500">Calculated sample size</div>
+                  <div className="mt-2 text-sm font-medium text-blue-600">
+                    {customSampleSize} credits
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-5">
+              {SAMPLE_SIZES.map((size) => (
+                <div
+                  key={size.value}
+                  onClick={() => {
+                    setCustomSampleSize(null);
+                    onSampleSizeChange(size.value);
+                  }}
+                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all text-center ${
+                    sampleSize === size.value && customSampleSize === null
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <div className="font-bold text-lg">{size.label}</div>
+                  <div className="text-xs text-gray-500">{size.description}</div>
+                  <div className="mt-2 text-sm font-medium text-blue-600">
+                    {size.value} credits
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

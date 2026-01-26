@@ -221,12 +221,18 @@ ${context.brandAffinity?.length ? `- Brand preferences: ${context.brandAffinity.
       }
     }
 
-    prompt += `\n\nWhen responding to questions, stay in character and answer from this person's perspective.
-Be authentic and provide thoughtful responses that reflect this person's background and viewpoint.`;
+    prompt += `\n\nRESPONSE GUIDELINES:
+- Respond naturally as this person would actually speak in a real survey
+- NEVER start responses with "As a [age]-year-old..." or mention your demographics
+- Your demographic info is context for HOW you think, not something to repeat
+- Be conversational and authentic, not robotic or formulaic
+- Vary your communication style based on personality (casual vs formal, brief vs detailed)
+- Express genuine opinions with natural human expressions
+- It's okay to be uncertain, have mixed feelings, or give nuanced answers`;
 
     // Add custom context instructions if provided
     if (productContext?.customContextInstructions) {
-      prompt += `\n\nADDITIONAL INSTRUCTIONS:\n${productContext.customContextInstructions}`;
+      prompt += `\n\nADDITIONAL CONTEXT:\n${productContext.customContextInstructions}`;
     }
 
     return prompt;
@@ -250,11 +256,9 @@ Be authentic and provide thoughtful responses that reflect this person's backgro
         messages: [
           {
             role: "user",
-            content: `Please respond to this survey question in first person, explaining your thoughts and feelings honestly:
+            content: `Survey question: "${question.text}"
 
-Question: ${question.text}
-
-Provide a thoughtful response (2-4 sentences) that explains your perspective on this topic.`,
+Answer naturally in 2-3 sentences. Share your honest opinion without repeating who you are.`,
           },
         ],
       });
@@ -378,27 +382,32 @@ Respond ONLY in this exact JSON format:
 
     // For multiple choice, use direct selection
     if (question.type === "multiple_choice" && question.options) {
-      const response = await this.anthropic.messages.create({
-        model: "claude-3-haiku-20240307",
-        max_tokens: 300,
-        system: this.buildPersonaPrompt(persona, productContext),
-        messages: [
-          {
-            role: "user",
-            content: `Question: ${question.text}
+      const options = question.options; // TypeScript narrowing
+      const response = await this.callWithRetry(async () => {
+        return this.anthropic.messages.create({
+          model: "claude-3-haiku-20240307",
+          max_tokens: 200,
+          system: this.buildPersonaPrompt(persona, productContext),
+          messages: [
+            {
+              role: "user",
+              content: `"${question.text}"
 
 Options:
-${question.options.map((o, i) => `${i + 1}. ${o}`).join("\n")}
+${options.map((o, i) => `${i + 1}. ${o}`).join("\n")}
 
-Choose one option and briefly explain why (1-2 sentences). Format: "I choose [number]: [brief explanation]"`,
-          },
-        ],
+Pick the option that fits you best and briefly explain why. Start your response with the option number.`,
+            },
+          ],
+        });
       });
 
       const textBlock = response.content.find((block) => block.type === "text");
       const text = textBlock?.type === "text" ? textBlock.text : "";
-      const match = text.match(/I choose (\d+)/i);
-      const rating = match ? parseInt(match[1]) : 1;
+
+      // Extract the option number from the beginning of the response
+      const match = text.match(/^(\d+)|option\s*(\d+)|choose\s*(\d+)|pick\s*(\d+)/i);
+      const rating = match ? parseInt(match[1] || match[2] || match[3] || match[4]) : 1;
 
       return {
         questionId: question.id,

@@ -57,11 +57,21 @@
 
 ### Medium Priority
 
+#### Response Quality & Naturalness
+- [ ] Remove formulaic response patterns ("As a [age]-year-old [gender]...")
+- [ ] Make responses sound more human and conversational
+- [ ] Avoid repeating demographic info in responses (already in persona context)
+- [ ] Vary response styles based on persona personality traits
+- [ ] Add natural language variation and authenticity
+- [ ] Reduce token waste from demographic repetition
+- [ ] Test different prompt engineering approaches for more natural outputs
+
 #### Persona Customization
-- [ ] Custom persona builder
-- [ ] Import personas from CSV
-- [ ] Persona templates by industry
-- [ ] Save and reuse persona panels
+- [x] Custom persona builder
+- [x] Import personas from CSV
+- [x] Persona templates by industry
+- [x] Save and reuse persona panels
+- [x] Sample size calculator (confidence level, margin of error, population size)
 
 #### Advanced Question Types
 - [ ] Matrix questions
@@ -102,8 +112,46 @@
 
 ---
 
+## Production Readiness
+
+### Pre-Production (Before Launch)
+
+#### Database Migration
+- [ ] Create Supabase project (free tier available)
+- [ ] Migrate SQLite schema to PostgreSQL
+- [ ] Update Drizzle config for PostgreSQL adapter
+- [ ] Migrate existing data (if any)
+- [ ] Update environment variables for production
+
+#### Authentication
+- [ ] Configure Google OAuth credentials (production)
+- [ ] Configure GitHub OAuth credentials (production)
+- [ ] Set secure BETTER_AUTH_SECRET (32+ random chars)
+- [ ] Enable email verification
+
+#### Payments
+- [ ] Create Stripe production account
+- [ ] Configure production Price IDs
+- [ ] Set up Stripe webhook endpoint
+- [ ] Test payment flow end-to-end
+
+#### Infrastructure
+- [ ] Deploy to Vercel/Railway/Fly.io
+- [ ] Configure custom domain
+- [ ] Set up SSL certificates
+- [ ] Configure environment variables
+
+#### Security Checklist
+- [ ] Rotate all API keys for production
+- [ ] Enable rate limiting on all endpoints
+- [ ] Review CORS configuration
+- [ ] Add security headers
+
+---
+
 ## Notes
 
 - Current rate limit: 40 requests/minute to Anthropic API
 - Sequential processing used to avoid rate limits
 - Consider upgrading Anthropic tier for parallel processing
+- **SQLite is perfect for development; migrate to Supabase/PostgreSQL for production**
