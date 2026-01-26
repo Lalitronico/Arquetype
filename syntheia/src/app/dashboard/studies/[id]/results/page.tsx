@@ -969,7 +969,7 @@ export default function StudyResultsPage({
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {question.type === "likert" && (
+                  {(question.type === "likert" || question.type === "rating") && (
                     <div className="space-y-4">
                       <div className="space-y-2">
                         {question.distribution.map((pct, i) => (
