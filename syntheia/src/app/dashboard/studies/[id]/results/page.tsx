@@ -57,6 +57,7 @@ interface StudyData {
     id: string;
     text: string;
     type: string;
+    options?: string[];
   }>;
   results: {
     respondents: Array<{
@@ -121,6 +122,7 @@ interface QuestionStat {
   }>;
   textResponses?: string[];
   topKeywords?: string[];
+  options?: string[];
 }
 
 // Helper function to extract top keywords from text responses
@@ -707,17 +709,34 @@ export default function StudyResultsPage({
       : 0;
 
     // Distribution calculation
-    const maxRating = normalizedType === "nps" ? 11 : 5;
-    const distribution = Array(maxRating).fill(0);
-    ratings.forEach((r) => {
-      const index = normalizedType === "nps" ? r : r - 1;
-      if (index >= 0 && index < maxRating) {
-        distribution[index]++;
-      }
-    });
-    const distributionPercent = ratings.length > 0
-      ? distribution.map((count) => Math.round((count / ratings.length) * 100))
-      : distribution;
+    let distributionPercent: number[];
+
+    if (normalizedType === "multiple_choice") {
+      // For multiple choice, calculate distribution based on selected options
+      const numOptions = question.options?.length || 4;
+      const distribution = Array(numOptions).fill(0);
+      ratings.forEach((r) => {
+        const index = r - 1; // rating is 1-indexed
+        if (index >= 0 && index < numOptions) {
+          distribution[index]++;
+        }
+      });
+      distributionPercent = ratings.length > 0
+        ? distribution.map((count) => Math.round((count / ratings.length) * 100))
+        : distribution;
+    } else {
+      const maxRating = normalizedType === "nps" ? 11 : 5;
+      const distribution = Array(maxRating).fill(0);
+      ratings.forEach((r) => {
+        const index = normalizedType === "nps" ? r : r - 1;
+        if (index >= 0 && index < maxRating) {
+          distribution[index]++;
+        }
+      });
+      distributionPercent = ratings.length > 0
+        ? distribution.map((count) => Math.round((count / ratings.length) * 100))
+        : distribution;
+    }
 
     // Standard deviation
     const variance = ratings.length > 0
@@ -965,6 +984,8 @@ export default function StudyResultsPage({
                       ? "Net Promoter Score"
                       : question.type === "open_ended"
                       ? "Open-ended"
+                      : question.type === "multiple_choice"
+                      ? "Multiple Choice"
                       : "5-point Likert Scale"}
                   </CardDescription>
                 </CardHeader>
@@ -1038,6 +1059,53 @@ export default function StudyResultsPage({
                           </div>
                           <div className="text-xs text-gray-500">Detractors</div>
                         </div>
+                      </div>
+                    </div>
+                  )}
+                  {question.type === "multiple_choice" && (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        {question.options && question.options.length > 0 ? (
+                          question.options.map((option, i) => {
+                            const optionCount = question.distribution[i] || 0;
+                            return (
+                              <div key={i} className="flex items-center gap-3">
+                                <span className="flex-shrink-0 w-48 text-sm text-gray-700 truncate" title={option}>
+                                  {option}
+                                </span>
+                                <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-blue-500 rounded-full transition-all"
+                                    style={{ width: `${optionCount}%` }}
+                                  />
+                                </div>
+                                <span className="w-12 text-sm font-medium text-right">
+                                  {optionCount}%
+                                </span>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          question.distribution.map((pct, i) => (
+                            <div key={i} className="flex items-center gap-3">
+                              <span className="w-24 text-sm text-gray-500 text-right">
+                                Option {i + 1}
+                              </span>
+                              <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-blue-500 rounded-full transition-all"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <span className="w-12 text-sm font-medium text-right">
+                                {pct}%
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      <div className="pt-2 border-t text-xs text-gray-500">
+                        {question.totalResponses} responses collected
                       </div>
                     </div>
                   )}

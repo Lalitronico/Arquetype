@@ -17,7 +17,7 @@ import {
   Loader2,
   Key,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -65,8 +65,31 @@ export default function DashboardLayout({
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [credits, setCredits] = useState<{ remaining: number; total: number } | null>(null);
 
   const { data: session, isPending } = useSession();
+
+  // Fetch credits on mount and when pathname changes (to refresh after running studies)
+  useEffect(() => {
+    const fetchCredits = async () => {
+      try {
+        const response = await fetch("/api/billing");
+        if (response.ok) {
+          const data = await response.json();
+          setCredits({
+            remaining: data.data?.organization?.creditsRemaining ?? 1000,
+            total: data.data?.organization?.creditsMonthly ?? 1000,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch credits:", error);
+      }
+    };
+
+    if (session) {
+      fetchCredits();
+    }
+  }, [session, pathname]);
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -177,13 +200,28 @@ export default function DashboardLayout({
                 Credits Remaining
               </div>
               <div className="mt-1 flex items-baseline gap-1">
-                <span className="text-2xl font-bold text-gray-900">1,000</span>
-                <span className="text-sm text-gray-500">/ 1,000</span>
+                <span className="text-2xl font-bold text-gray-900">
+                  {credits ? credits.remaining.toLocaleString() : "..."}
+                </span>
+                <span className="text-sm text-gray-500">
+                  / {credits ? credits.total.toLocaleString() : "..."}
+                </span>
               </div>
               <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-blue-600 rounded-full"
-                  style={{ width: "100%" }}
+                  className={cn(
+                    "h-full rounded-full transition-all",
+                    credits && credits.remaining / credits.total < 0.2
+                      ? "bg-red-500"
+                      : credits && credits.remaining / credits.total < 0.5
+                      ? "bg-yellow-500"
+                      : "bg-blue-600"
+                  )}
+                  style={{
+                    width: credits
+                      ? `${(credits.remaining / credits.total) * 100}%`
+                      : "100%"
+                  }}
                 />
               </div>
             </div>
