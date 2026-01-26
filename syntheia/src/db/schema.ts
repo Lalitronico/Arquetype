@@ -182,3 +182,21 @@ export type SyntheticRespondent = typeof syntheticRespondents.$inferSelect;
 export type Response = typeof responses.$inferSelect;
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type NewApiKey = typeof apiKeys.$inferInsert;
+
+// Panel configurations for reusable persona settings
+export const panelConfigs = sqliteTable("panel_configs", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  config: text("config").notNull(), // JSON PersonaConfig
+  isTemplate: integer("is_template", { mode: "boolean" }).default(false),
+  industry: text("industry"), // For filtering by industry
+  createdAt: text("created_at").notNull().default(new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().default(new Date().toISOString()),
+});
+
+export type PanelConfig = typeof panelConfigs.$inferSelect;
+export type NewPanelConfig = typeof panelConfigs.$inferInsert;

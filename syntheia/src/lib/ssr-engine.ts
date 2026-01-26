@@ -244,7 +244,7 @@ Be authentic and provide thoughtful responses that reflect this person's backgro
 
     const response = await this.callWithRetry(async () => {
       return this.anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-3-haiku-20240307",
         max_tokens: 500,
         system: personaPrompt,
         messages: [
@@ -296,7 +296,7 @@ Respond ONLY in this exact JSON format:
     try {
       const response = await this.callWithRetry(async () => {
         return this.anthropic.messages.create({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-3-haiku-20240307",
           max_tokens: 100,
           messages: [{ role: "user", content: prompt }],
         });
@@ -379,7 +379,7 @@ Respond ONLY in this exact JSON format:
     // For multiple choice, use direct selection
     if (question.type === "multiple_choice" && question.options) {
       const response = await this.anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-3-haiku-20240307",
         max_tokens: 300,
         system: this.buildPersonaPrompt(persona, productContext),
         messages: [
@@ -446,7 +446,7 @@ Choose one option and briefly explain why (1-2 sentences). Format: "I choose [nu
       personaId: persona.id,
       responses,
       metadata: {
-        modelUsed: "claude-sonnet-4-20250514",
+        modelUsed: "claude-3-haiku-20240307",
         timestamp: new Date().toISOString(),
         processingTimeMs: Date.now() - startTime,
       },

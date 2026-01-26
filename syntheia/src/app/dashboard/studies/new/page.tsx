@@ -8,7 +8,6 @@ import {
   Plus,
   Trash2,
   GripVertical,
-  Users,
   Play,
   Save,
   Loader2,
@@ -46,6 +45,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { surveyTemplates, templateCategories, type SurveyTemplate } from "@/lib/survey-templates";
+import { PersonaBuilder } from "@/components/persona-builder";
+import { PersonaConfig, PERSONA_PRESETS } from "@/lib/persona-generator";
 
 interface Question {
   id: string;
@@ -61,25 +62,6 @@ const QUESTION_TYPES = [
   { value: "nps", label: "NPS (0-10)", description: "Net Promoter Score" },
   { value: "multiple_choice", label: "Multiple Choice", description: "Select one option" },
   { value: "open_ended", label: "Open Ended", description: "Free text response" },
-];
-
-const PERSONA_PRESETS = [
-  { value: "generalPopulation", label: "General Population", description: "US adults 18-75" },
-  { value: "millennials", label: "Millennials", description: "Ages 28-43" },
-  { value: "genZ", label: "Gen Z", description: "Ages 18-27" },
-  { value: "highIncome", label: "High Income", description: "$125K+ household income" },
-  { value: "techWorkers", label: "Tech Workers", description: "Software & tech professionals" },
-  { value: "parentsFamilies", label: "Parents & Families", description: "Adults with children" },
-  { value: "healthConscious", label: "Health Conscious", description: "Wellness-focused consumers" },
-  { value: "ecoConscious", label: "Eco Conscious", description: "Sustainability-minded" },
-];
-
-const SAMPLE_SIZES = [
-  { value: 50, label: "50 respondents", description: "Quick pulse check" },
-  { value: 100, label: "100 respondents", description: "Standard study" },
-  { value: 250, label: "250 respondents", description: "Detailed analysis" },
-  { value: 500, label: "500 respondents", description: "Statistical significance" },
-  { value: 1000, label: "1,000 respondents", description: "Enterprise scale" },
 ];
 
 const INDUSTRIES = [
@@ -135,7 +117,10 @@ export default function NewStudyPage() {
   const [questions, setQuestions] = useState<Question[]>([
     { id: crypto.randomUUID(), type: "likert", text: "", required: true },
   ]);
-  const [selectedPreset, setSelectedPreset] = useState("generalPopulation");
+  const [panelConfig, setPanelConfig] = useState<PersonaConfig>(() => ({
+    ...PERSONA_PRESETS.generalPopulation,
+    count: 100,
+  }));
   const [sampleSize, setSampleSize] = useState(100);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -211,7 +196,7 @@ export default function NewStudyPage() {
           description: studyDescription,
           questions: validQuestions,
           panelConfig: {
-            preset: selectedPreset,
+            ...panelConfig,
             count: sampleSize,
           },
           sampleSize,
@@ -219,7 +204,7 @@ export default function NewStudyPage() {
           productName: productName || undefined,
           productDescription: productDescription || undefined,
           brandName: brandName || undefined,
-          industry: industry || undefined,
+          industry: industry || panelConfig.context?.industry || undefined,
           productCategory: productCategory || undefined,
           customContextInstructions: customContextInstructions || undefined,
         }),
@@ -255,7 +240,7 @@ export default function NewStudyPage() {
           description: studyDescription,
           questions: validQuestions,
           panelConfig: {
-            preset: selectedPreset,
+            ...panelConfig,
             count: sampleSize,
           },
           sampleSize,
@@ -263,7 +248,7 @@ export default function NewStudyPage() {
           productName: productName || undefined,
           productDescription: productDescription || undefined,
           brandName: brandName || undefined,
-          industry: industry || undefined,
+          industry: industry || panelConfig.context?.industry || undefined,
           productCategory: productCategory || undefined,
           customContextInstructions: customContextInstructions || undefined,
         }),
@@ -686,69 +671,20 @@ export default function NewStudyPage() {
       {/* Step 3: Panel Configuration */}
       {step === 3 && (
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Panel Configuration</CardTitle>
-              <CardDescription>
-                Define your synthetic panel demographics and sample size
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <Label>Persona Preset</Label>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {PERSONA_PRESETS.map((preset) => (
-                    <div
-                      key={preset.value}
-                      onClick={() => setSelectedPreset(preset.value)}
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        selectedPreset === preset.value
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-                          <Users className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <div className="font-medium">{preset.label}</div>
-                          <div className="text-sm text-gray-500">
-                            {preset.description}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+          <div>
+            <h2 className="text-2xl font-bold">Panel Configuration</h2>
+            <p className="text-gray-600 mt-1">
+              Define your synthetic panel demographics, psychographics, and sample size
+            </p>
+          </div>
 
-              <div className="space-y-4">
-                <Label>Sample Size</Label>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {SAMPLE_SIZES.map((size) => (
-                    <div
-                      key={size.value}
-                      onClick={() => setSampleSize(size.value)}
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        sampleSize === size.value
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <div className="font-medium">{size.label}</div>
-                      <div className="text-sm text-gray-500">
-                        {size.description}
-                      </div>
-                      <div className="mt-2 text-sm font-medium text-blue-600">
-                        {size.value} credits
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* PersonaBuilder Component */}
+          <PersonaBuilder
+            value={panelConfig}
+            onChange={setPanelConfig}
+            sampleSize={sampleSize}
+            onSampleSizeChange={setSampleSize}
+          />
 
           {/* Summary */}
           <Card>
@@ -770,12 +706,6 @@ export default function NewStudyPage() {
                 <div className="flex justify-between">
                   <dt className="text-gray-500">Questions</dt>
                   <dd className="font-medium">{questions.filter(q => q.text.trim()).length}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-gray-500">Panel</dt>
-                  <dd className="font-medium">
-                    {PERSONA_PRESETS.find((p) => p.value === selectedPreset)?.label}
-                  </dd>
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-gray-500">Sample Size</dt>
