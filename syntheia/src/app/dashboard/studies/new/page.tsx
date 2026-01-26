@@ -82,6 +82,38 @@ const SAMPLE_SIZES = [
   { value: 1000, label: "1,000 respondents", description: "Enterprise scale" },
 ];
 
+const INDUSTRIES = [
+  "Technology",
+  "Healthcare",
+  "Finance",
+  "Retail",
+  "Education",
+  "Entertainment",
+  "Food & Beverage",
+  "Automotive",
+  "Travel & Hospitality",
+  "Real Estate",
+  "Manufacturing",
+  "Professional Services",
+  "Non-profit",
+  "Other",
+];
+
+const PRODUCT_CATEGORIES = [
+  "SaaS / Software",
+  "Mobile App",
+  "Consumer Electronics",
+  "E-commerce",
+  "Subscription Service",
+  "Physical Product",
+  "Professional Service",
+  "Content / Media",
+  "Marketplace",
+  "Financial Product",
+  "Health & Wellness",
+  "Other",
+];
+
 // Icon mapping for templates
 const iconMap: Record<string, React.ElementType> = {
   TrendingUp,
@@ -108,6 +140,14 @@ export default function NewStudyPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // Product/Service context fields
+  const [productName, setProductName] = useState("");
+  const [productDescription, setProductDescription] = useState("");
+  const [brandName, setBrandName] = useState("");
+  const [industry, setIndustry] = useState("");
+  const [productCategory, setProductCategory] = useState("");
+  const [customContextInstructions, setCustomContextInstructions] = useState("");
 
   const applyTemplate = (template: SurveyTemplate) => {
     setSelectedTemplate(template);
@@ -175,6 +215,13 @@ export default function NewStudyPage() {
             count: sampleSize,
           },
           sampleSize,
+          // Product/Service context
+          productName: productName || undefined,
+          productDescription: productDescription || undefined,
+          brandName: brandName || undefined,
+          industry: industry || undefined,
+          productCategory: productCategory || undefined,
+          customContextInstructions: customContextInstructions || undefined,
         }),
       });
 
@@ -212,6 +259,13 @@ export default function NewStudyPage() {
             count: sampleSize,
           },
           sampleSize,
+          // Product/Service context
+          productName: productName || undefined,
+          productDescription: productDescription || undefined,
+          brandName: brandName || undefined,
+          industry: industry || undefined,
+          productCategory: productCategory || undefined,
+          customContextInstructions: customContextInstructions || undefined,
         }),
       });
 
@@ -223,19 +277,13 @@ export default function NewStudyPage() {
 
       const studyId = createData.data.id;
 
-      // Then run the simulation
-      const runResponse = await fetch(`/api/studies/${studyId}/run`, {
+      // Start the simulation (don't await - let it run in background)
+      fetch(`/api/studies/${studyId}/run`, {
         method: "POST",
-      });
+      }).catch(console.error);
 
-      const runData = await runResponse.json();
-
-      if (!runResponse.ok) {
-        throw new Error(runData.error || "Failed to run study");
-      }
-
-      // Redirect to results
-      router.push(`/dashboard/studies/${studyId}/results`);
+      // Redirect to running page immediately to show progress
+      router.push(`/dashboard/studies/${studyId}/running`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setIsLoading(false);
@@ -379,53 +427,149 @@ export default function NewStudyPage() {
 
       {/* Step 1: Study Details */}
       {step === 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {selectedTemplate ? `Customize: ${selectedTemplate.name}` : "Study Details"}
-            </CardTitle>
-            <CardDescription>
-              {selectedTemplate
-                ? "Customize the template to fit your needs"
-                : "Start by giving your study a name and description"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">Study Name</Label>
-              <Input
-                id="name"
-                placeholder="e.g., Q1 Product Concept Test"
-                value={studyName}
-                onChange={(e) => setStudyName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description (optional)</Label>
-              <Textarea
-                id="description"
-                placeholder="Describe the purpose and goals of this study..."
-                value={studyDescription}
-                onChange={(e) => setStudyDescription(e.target.value)}
-                rows={4}
-              />
-            </div>
-            <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep(0)}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Templates
-              </Button>
-              <Button
-                variant="gradient"
-                onClick={() => setStep(2)}
-                disabled={!studyName.trim()}
-              >
-                Continue
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {selectedTemplate ? `Customize: ${selectedTemplate.name}` : "Study Details"}
+              </CardTitle>
+              <CardDescription>
+                {selectedTemplate
+                  ? "Customize the template to fit your needs"
+                  : "Start by giving your study a name and description"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="name">Study Name</Label>
+                <Input
+                  id="name"
+                  placeholder="e.g., Q1 Product Concept Test"
+                  value={studyName}
+                  onChange={(e) => setStudyName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description (optional)</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Describe the purpose and goals of this study..."
+                  value={studyDescription}
+                  onChange={(e) => setStudyDescription(e.target.value)}
+                  rows={4}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Product/Service Context Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Product/Service Context
+              </CardTitle>
+              <CardDescription>
+                Help synthetic personas understand what they&apos;re evaluating for more relevant responses
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="productName">Product/Service Name</Label>
+                  <Input
+                    id="productName"
+                    placeholder="e.g., Acme Analytics Pro"
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="brandName">Brand Name</Label>
+                  <Input
+                    id="brandName"
+                    placeholder="e.g., Acme Inc."
+                    value={brandName}
+                    onChange={(e) => setBrandName(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="industry">Industry</Label>
+                  <Select value={industry} onValueChange={setIndustry}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select industry" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INDUSTRIES.map((ind) => (
+                        <SelectItem key={ind} value={ind}>
+                          {ind}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="productCategory">Product Category</Label>
+                  <Select value={productCategory} onValueChange={setProductCategory}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PRODUCT_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="productDescription">Product/Service Description</Label>
+                <Textarea
+                  id="productDescription"
+                  placeholder="Describe your product or service. What does it do? Who is it for? What problem does it solve?"
+                  value={productDescription}
+                  onChange={(e) => setProductDescription(e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="customContext">Custom Context Instructions (optional)</Label>
+                <Textarea
+                  id="customContext"
+                  placeholder="Any additional context or instructions for how personas should approach your survey. e.g., 'Assume respondents have used the product for at least 3 months'"
+                  value={customContextInstructions}
+                  onChange={(e) => setCustomContextInstructions(e.target.value)}
+                  rows={3}
+                />
+                <p className="text-xs text-gray-500">
+                  These instructions will be included in the persona prompt to guide responses.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={() => setStep(0)}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Templates
+            </Button>
+            <Button
+              variant="gradient"
+              onClick={() => setStep(2)}
+              disabled={!studyName.trim()}
+            >
+              Continue
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Step 2: Questions */}

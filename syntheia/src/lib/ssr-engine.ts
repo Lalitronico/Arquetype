@@ -47,6 +47,16 @@ export interface SurveyQuestion {
   };
 }
 
+// Product/Service context for more relevant responses
+export interface ProductContext {
+  productName?: string;
+  productDescription?: string;
+  brandName?: string;
+  industry?: string;
+  productCategory?: string;
+  customContextInstructions?: string;
+}
+
 export interface SSRResponse {
   questionId: string;
   rating: number;
@@ -167,10 +177,10 @@ export class SSREngine {
   /**
    * Build a detailed persona prompt for the LLM
    */
-  private buildPersonaPrompt(persona: SyntheticPersona): string {
+  private buildPersonaPrompt(persona: SyntheticPersona, productContext?: ProductContext): string {
     const { demographics, psychographics, context } = persona;
 
-    return `You are a survey respondent with the following characteristics:
+    let prompt = `You are a survey respondent with the following characteristics:
 
 DEMOGRAPHICS:
 - Age: ${demographics.age} years old
@@ -189,10 +199,37 @@ PSYCHOGRAPHICS:
 ${context.industry ? `CONTEXT:\n- Industry: ${context.industry}` : ""}
 ${context.role ? `- Role: ${context.role}` : ""}
 ${context.productExperience ? `- Product Experience: ${context.productExperience}` : ""}
-${context.brandAffinity?.length ? `- Brand preferences: ${context.brandAffinity.join(", ")}` : ""}
+${context.brandAffinity?.length ? `- Brand preferences: ${context.brandAffinity.join(", ")}` : ""}`;
 
-When responding to questions, stay in character and answer from this person's perspective.
+    // Add product/service context if available
+    if (productContext && (productContext.productName || productContext.productDescription)) {
+      prompt += `\n\nPRODUCT/SERVICE BEING EVALUATED:`;
+      if (productContext.brandName) {
+        prompt += `\n- Brand: ${productContext.brandName}`;
+      }
+      if (productContext.productName) {
+        prompt += `\n- Product/Service: ${productContext.productName}`;
+      }
+      if (productContext.industry) {
+        prompt += `\n- Industry: ${productContext.industry}`;
+      }
+      if (productContext.productCategory) {
+        prompt += `\n- Category: ${productContext.productCategory}`;
+      }
+      if (productContext.productDescription) {
+        prompt += `\n- Description: ${productContext.productDescription}`;
+      }
+    }
+
+    prompt += `\n\nWhen responding to questions, stay in character and answer from this person's perspective.
 Be authentic and provide thoughtful responses that reflect this person's background and viewpoint.`;
+
+    // Add custom context instructions if provided
+    if (productContext?.customContextInstructions) {
+      prompt += `\n\nADDITIONAL INSTRUCTIONS:\n${productContext.customContextInstructions}`;
+    }
+
+    return prompt;
   }
 
   /**
@@ -200,9 +237,10 @@ Be authentic and provide thoughtful responses that reflect this person's backgro
    */
   private async generateTextResponse(
     persona: SyntheticPersona,
-    question: SurveyQuestion
+    question: SurveyQuestion,
+    productContext?: ProductContext
   ): Promise<string> {
-    const personaPrompt = this.buildPersonaPrompt(persona);
+    const personaPrompt = this.buildPersonaPrompt(persona, productContext);
 
     const response = await this.callWithRetry(async () => {
       return this.anthropic.messages.create({
@@ -323,11 +361,12 @@ Respond ONLY in this exact JSON format:
    */
   async generateResponse(
     persona: SyntheticPersona,
-    question: SurveyQuestion
+    question: SurveyQuestion,
+    productContext?: ProductContext
   ): Promise<SSRResponse> {
     // For open-ended questions, just return the text
     if (question.type === "open_ended") {
-      const textResponse = await this.generateTextResponse(persona, question);
+      const textResponse = await this.generateTextResponse(persona, question, productContext);
       return {
         questionId: question.id,
         rating: 0,
@@ -342,7 +381,7 @@ Respond ONLY in this exact JSON format:
       const response = await this.anthropic.messages.create({
         model: "claude-sonnet-4-20250514",
         max_tokens: 300,
-        system: this.buildPersonaPrompt(persona),
+        system: this.buildPersonaPrompt(persona, productContext),
         messages: [
           {
             role: "user",
@@ -371,7 +410,7 @@ Choose one option and briefly explain why (1-2 sentences). Format: "I choose [nu
     }
 
     // For Likert/NPS scales, use SSR methodology
-    const textResponse = await this.generateTextResponse(persona, question);
+    const textResponse = await this.generateTextResponse(persona, question, productContext);
     const { rating, distribution, confidence } = await this.mapToLikert(
       textResponse,
       question
@@ -392,13 +431,14 @@ Choose one option and briefly explain why (1-2 sentences). Format: "I choose [nu
    */
   async simulatePersona(
     persona: SyntheticPersona,
-    questions: SurveyQuestion[]
+    questions: SurveyQuestion[],
+    productContext?: ProductContext
   ): Promise<SimulationResult> {
     const startTime = Date.now();
     const responses: SSRResponse[] = [];
 
     for (const question of questions) {
-      const response = await this.generateResponse(persona, question);
+      const response = await this.generateResponse(persona, question, productContext);
       responses.push(response);
     }
 
@@ -415,19 +455,36 @@ Choose one option and briefly explain why (1-2 sentences). Format: "I choose [nu
 
   /**
    * Run simulation for multiple personas sequentially to respect rate limits
+   * @param shouldCancel - Optional async callback to check if simulation should be cancelled
    */
   async simulatePanel(
     personas: SyntheticPersona[],
     questions: SurveyQuestion[],
-    _concurrency: number = 1 // Ignored, always sequential for rate limit safety
-  ): Promise<SimulationResult[]> {
+    productContext?: ProductContext,
+    onProgress?: (current: number, total: number) => Promise<void>,
+    shouldCancel?: () => Promise<boolean>
+  ): Promise<{ results: SimulationResult[]; cancelled: boolean }> {
     const results: SimulationResult[] = [];
 
     // Process sequentially to respect rate limits
     for (let i = 0; i < personas.length; i++) {
+      // Check for cancellation before processing each persona
+      if (shouldCancel) {
+        const cancelled = await shouldCancel();
+        if (cancelled) {
+          console.log(`Simulation cancelled at persona ${i + 1}/${personas.length}`);
+          return { results, cancelled: true };
+        }
+      }
+
       console.log(`Processing persona ${i + 1}/${personas.length}...`);
-      const result = await this.simulatePersona(personas[i], questions);
+      const result = await this.simulatePersona(personas[i], questions, productContext);
       results.push(result);
+
+      // Report progress
+      if (onProgress) {
+        await onProgress(i + 1, personas.length);
+      }
 
       // Add small delay between personas
       if (i < personas.length - 1) {
@@ -435,7 +492,7 @@ Choose one option and briefly explain why (1-2 sentences). Format: "I choose [nu
       }
     }
 
-    return results;
+    return { results, cancelled: false };
   }
 }
 

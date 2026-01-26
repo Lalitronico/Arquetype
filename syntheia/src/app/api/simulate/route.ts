@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
 
     // Run simulation
     const ssrEngine = getSSREngine();
-    const results = await ssrEngine.simulatePanel(panel, questions, 5);
+    const { results } = await ssrEngine.simulatePanel(panel, questions);
 
     // Aggregate results
     const aggregatedResults = aggregateResults(results, questions);
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
 }
 
 function aggregateResults(
-  results: Awaited<ReturnType<ReturnType<typeof getSSREngine>["simulatePanel"]>>,
+  results: Awaited<ReturnType<ReturnType<typeof getSSREngine>["simulatePanel"]>>["results"],
   questions: SurveyQuestion[]
 ) {
   return questions.map((question) => {

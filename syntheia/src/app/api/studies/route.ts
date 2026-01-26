@@ -45,6 +45,13 @@ const CreateStudySchema = z.object({
     })
     .optional(),
   sampleSize: z.number().min(1).max(10000).default(100),
+  // Product/Service context fields
+  productName: z.string().max(200).optional(),
+  productDescription: z.string().max(2000).optional(),
+  brandName: z.string().max(200).optional(),
+  industry: z.string().max(100).optional(),
+  productCategory: z.string().max(100).optional(),
+  customContextInstructions: z.string().max(2000).optional(),
 });
 
 async function getSession() {
@@ -176,6 +183,13 @@ export async function POST(request: NextRequest) {
         : null,
       sampleSize: validatedData.sampleSize,
       creditsUsed: 0,
+      // Product/Service context fields
+      productName: validatedData.productName || null,
+      productDescription: validatedData.productDescription || null,
+      brandName: validatedData.brandName || null,
+      industry: validatedData.industry || null,
+      productCategory: validatedData.productCategory || null,
+      customContextInstructions: validatedData.customContextInstructions || null,
       createdAt: now,
       updatedAt: now,
     });

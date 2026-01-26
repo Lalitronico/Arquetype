@@ -97,9 +97,20 @@ export const studies = sqliteTable("studies", {
   panelConfig: text("panel_config"), // JSON string of persona configuration
   sampleSize: integer("sample_size").notNull().default(100),
   creditsUsed: integer("credits_used").default(0),
+  // Product/Service context fields
+  productName: text("product_name"), // Name of the product/service being evaluated
+  productDescription: text("product_description"), // Description of the product/service
+  brandName: text("brand_name"), // Brand name
+  industry: text("industry"), // Industry/sector (e.g., "Technology", "Healthcare", "Retail")
+  productCategory: text("product_category"), // Product category (e.g., "SaaS", "Consumer Electronics")
+  customContextInstructions: text("custom_context_instructions"), // Custom instructions for persona context
+  // Simulation progress tracking
+  currentPersona: integer("current_persona").default(0), // Current persona being processed
+  simulationStartedAt: text("simulation_started_at"), // When simulation started
   createdAt: text("created_at").notNull().default(new Date().toISOString()),
   updatedAt: text("updated_at").notNull().default(new Date().toISOString()),
   completedAt: text("completed_at"),
+  cancelledAt: text("cancelled_at"), // When simulation was cancelled
 });
 
 // Synthetic respondents

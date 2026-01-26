@@ -66,6 +66,15 @@ interface StudyData {
           age: number;
           gender: string;
           location: string;
+          income?: string;
+          education?: string;
+          occupation?: string;
+        };
+        psychographics?: {
+          values?: string[];
+          lifestyle?: string;
+          interests?: string[];
+          personality?: string;
         };
       };
     }>;
@@ -80,6 +89,482 @@ interface StudyData {
       distribution: number[] | null;
     }>;
   } | null;
+}
+
+interface QuestionStat {
+  id: string;
+  text: string;
+  type: string;
+  totalResponses: number;
+  mean: number;
+  median: number;
+  stdDev: number;
+  distribution: number[];
+  avgConfidence: number;
+  npsData: {
+    npsScore: number;
+    promoters: number;
+    passives: number;
+    detractors: number;
+  } | null;
+  sampleResponses: Array<{
+    rating: number | null;
+    explanation: string | null;
+    persona?: {
+      demographics: {
+        age: number;
+        gender: string;
+        location: string;
+      };
+    };
+  }>;
+}
+
+// Demographics Analysis Component
+function DemographicsAnalysis({
+  study,
+  questionStats,
+}: {
+  study: StudyData;
+  questionStats: QuestionStat[];
+}) {
+  const [selectedDemographic, setSelectedDemographic] = useState<string>("gender");
+  const [selectedQuestionId, setSelectedQuestionId] = useState<string>(
+    questionStats.length > 0 ? questionStats[0].id : ""
+  );
+
+  if (!study.results) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No Results Available
+          </h3>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const { respondents, responses } = study.results;
+
+  // Get age group
+  const getAgeGroup = (age: number): string => {
+    if (age < 25) return "18-24";
+    if (age < 35) return "25-34";
+    if (age < 45) return "35-44";
+    if (age < 55) return "45-54";
+    if (age < 65) return "55-64";
+    return "65+";
+  };
+
+  // Group respondents by demographic
+  const groupRespondents = (demographic: string) => {
+    const groups: Record<string, string[]> = {};
+
+    respondents.forEach((r) => {
+      let key: string;
+      switch (demographic) {
+        case "gender":
+          key = r.personaData.demographics.gender || "Unknown";
+          break;
+        case "age":
+          key = getAgeGroup(r.personaData.demographics.age);
+          break;
+        case "location":
+          // Group by state (extract from location like "City, State")
+          const loc = r.personaData.demographics.location || "Unknown";
+          const parts = loc.split(", ");
+          key = parts.length > 1 ? parts[1] : parts[0];
+          break;
+        default:
+          key = "Unknown";
+      }
+
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+      groups[key].push(r.id);
+    });
+
+    return groups;
+  };
+
+  // Calculate stats for a group of respondent IDs
+  const calculateGroupStats = (respondentIds: string[], questionId: string) => {
+    const questionResponses = responses.filter(
+      (r) => r.questionId === questionId && respondentIds.includes(r.respondentId)
+    );
+    const ratings = questionResponses
+      .map((r) => r.rating)
+      .filter((r): r is number => r !== null && r > 0);
+
+    if (ratings.length === 0) {
+      return { mean: 0, count: 0 };
+    }
+
+    const mean = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+    return {
+      mean: Math.round(mean * 100) / 100,
+      count: ratings.length,
+    };
+  };
+
+  const groups = groupRespondents(selectedDemographic);
+  const question = questionStats.find((q) => q.id === selectedQuestionId);
+
+  // Sort groups for display
+  const sortedGroups = Object.entries(groups).sort((a, b) => {
+    if (selectedDemographic === "age") {
+      const ageOrder = ["18-24", "25-34", "35-44", "45-54", "55-64", "65+"];
+      return ageOrder.indexOf(a[0]) - ageOrder.indexOf(b[0]);
+    }
+    return a[0].localeCompare(b[0]);
+  });
+
+  // Calculate demographic distribution
+  const demographicCounts = sortedGroups.map(([name, ids]) => ({
+    name,
+    count: ids.length,
+    percentage: Math.round((ids.length / respondents.length) * 100),
+  }));
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      {/* Demographic Distribution */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Panel Composition</CardTitle>
+          <CardDescription>
+            Distribution of respondents by demographic
+          </CardDescription>
+          <Select value={selectedDemographic} onValueChange={setSelectedDemographic}>
+            <SelectTrigger className="w-40 mt-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="gender">Gender</SelectItem>
+              <SelectItem value="age">Age Group</SelectItem>
+              <SelectItem value="location">Location</SelectItem>
+            </SelectContent>
+          </Select>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {demographicCounts.map(({ name, count, percentage }) => (
+              <div key={name} className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium capitalize">{name}</span>
+                  <span className="text-gray-500">{count} ({percentage}%)</span>
+                </div>
+                <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 rounded-full transition-all"
+                    style={{ width: `${percentage}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Segment Comparison */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Segment Comparison</CardTitle>
+          <CardDescription>
+            Compare average ratings across demographic segments
+          </CardDescription>
+          <Select value={selectedQuestionId} onValueChange={setSelectedQuestionId}>
+            <SelectTrigger className="w-full mt-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {questionStats
+                .filter((q) => q.type !== "open_ended")
+                .map((q, i) => (
+                  <SelectItem key={q.id} value={q.id}>
+                    Q{i + 1}: {q.text.substring(0, 40)}...
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+        </CardHeader>
+        <CardContent>
+          {question && question.type !== "open_ended" ? (
+            <div className="space-y-4">
+              <div className="text-sm text-gray-500 mb-4">
+                {question.text}
+              </div>
+              <div className="space-y-3">
+                {sortedGroups.map(([name, ids]) => {
+                  const stats = calculateGroupStats(ids, selectedQuestionId);
+                  const maxRating = question.type === "nps" ? 10 : 5;
+                  const barWidth = (stats.mean / maxRating) * 100;
+
+                  return (
+                    <div key={name} className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="font-medium capitalize">{name}</span>
+                        <span className="text-blue-600 font-bold">
+                          {stats.mean} <span className="text-gray-400 font-normal">({stats.count})</span>
+                        </span>
+                      </div>
+                      <div className="h-6 bg-gray-100 rounded overflow-hidden relative">
+                        <div
+                          className={`h-full rounded transition-all ${
+                            stats.mean >= 4 ? "bg-green-500" :
+                            stats.mean >= 3 ? "bg-yellow-500" : "bg-red-500"
+                          }`}
+                          style={{ width: `${barWidth}%` }}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center text-xs font-medium">
+                          {stats.mean > 0 && `${stats.mean}/${maxRating}`}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="pt-4 border-t text-xs text-gray-500">
+                Overall mean: <span className="font-medium text-blue-600">{question.mean}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              Select a rating-based question to see segment comparison
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Insights Card */}
+      <Card className="lg:col-span-2">
+        <CardHeader>
+          <CardTitle>Key Demographic Insights</CardTitle>
+          <CardDescription>
+            Notable differences across demographic segments
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DemographicInsights
+            respondents={respondents}
+            responses={responses}
+            questionStats={questionStats}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Helper component for demographic insights
+function DemographicInsights({
+  respondents,
+  responses,
+  questionStats,
+}: {
+  respondents: StudyData["results"] extends null ? never : NonNullable<StudyData["results"]>["respondents"];
+  responses: StudyData["results"] extends null ? never : NonNullable<StudyData["results"]>["responses"];
+  questionStats: QuestionStat[];
+}) {
+  // Calculate insights
+  const insights: Array<{ type: "positive" | "negative" | "neutral"; text: string }> = [];
+
+  // Group by gender
+  const genderGroups: Record<string, string[]> = {};
+  respondents.forEach((r) => {
+    const gender = r.personaData.demographics.gender || "Unknown";
+    if (!genderGroups[gender]) genderGroups[gender] = [];
+    genderGroups[gender].push(r.id);
+  });
+
+  // Find significant differences in ratings by gender
+  questionStats.forEach((question) => {
+    if (question.type === "open_ended") return;
+
+    const genderMeans: Record<string, number> = {};
+    Object.entries(genderGroups).forEach(([gender, ids]) => {
+      const ratings = responses
+        .filter((r) => r.questionId === question.id && ids.includes(r.respondentId))
+        .map((r) => r.rating)
+        .filter((r): r is number => r !== null && r > 0);
+
+      if (ratings.length > 0) {
+        genderMeans[gender] = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+      }
+    });
+
+    // Check for significant differences (>0.5 difference)
+    const genders = Object.keys(genderMeans);
+    if (genders.length >= 2) {
+      const values = Object.values(genderMeans);
+      const maxDiff = Math.max(...values) - Math.min(...values);
+      if (maxDiff > 0.5) {
+        const highest = genders.reduce((a, b) =>
+          genderMeans[a] > genderMeans[b] ? a : b
+        );
+        const lowest = genders.reduce((a, b) =>
+          genderMeans[a] < genderMeans[b] ? a : b
+        );
+        insights.push({
+          type: "neutral",
+          text: `${highest} respondents rated "${question.text.substring(0, 50)}..." higher (${genderMeans[highest].toFixed(1)}) than ${lowest} (${genderMeans[lowest].toFixed(1)})`,
+        });
+      }
+    }
+  });
+
+  // Find questions with highest and lowest ratings
+  const ratingQuestions = questionStats.filter((q) => q.type !== "open_ended" && q.totalResponses > 0);
+  if (ratingQuestions.length > 0) {
+    const highest = ratingQuestions.reduce((a, b) => a.mean > b.mean ? a : b);
+    const lowest = ratingQuestions.reduce((a, b) => a.mean < b.mean ? a : b);
+
+    if (highest.mean >= 4) {
+      insights.push({
+        type: "positive",
+        text: `Strongest positive response on "${highest.text.substring(0, 50)}..." with mean rating of ${highest.mean}`,
+      });
+    }
+
+    if (lowest.mean <= 2.5) {
+      insights.push({
+        type: "negative",
+        text: `Lowest rating on "${lowest.text.substring(0, 50)}..." with mean rating of ${lowest.mean}`,
+      });
+    }
+  }
+
+  if (insights.length === 0) {
+    insights.push({
+      type: "neutral",
+      text: "No significant demographic differences detected. Responses are relatively consistent across segments.",
+    });
+  }
+
+  return (
+    <div className="space-y-3">
+      {insights.slice(0, 5).map((insight, i) => (
+        <div
+          key={i}
+          className={`flex items-start gap-3 p-3 rounded-lg ${
+            insight.type === "positive"
+              ? "bg-green-50 text-green-800"
+              : insight.type === "negative"
+              ? "bg-red-50 text-red-800"
+              : "bg-blue-50 text-blue-800"
+          }`}
+        >
+          {insight.type === "positive" && <ThumbsUp className="h-5 w-5 flex-shrink-0" />}
+          {insight.type === "negative" && <ThumbsDown className="h-5 w-5 flex-shrink-0" />}
+          {insight.type === "neutral" && <BarChart3 className="h-5 w-5 flex-shrink-0" />}
+          <span className="text-sm">{insight.text}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Word Cloud Component
+function WordCloud({ texts }: { texts: string[] }) {
+  // Extract and count words
+  const stopWords = new Set([
+    "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
+    "of", "with", "by", "from", "as", "is", "was", "are", "were", "been",
+    "be", "have", "has", "had", "do", "does", "did", "will", "would", "could",
+    "should", "may", "might", "must", "shall", "can", "need", "dare", "ought",
+    "used", "i", "me", "my", "myself", "we", "our", "ours", "ourselves",
+    "you", "your", "yours", "yourself", "yourselves", "he", "him", "his",
+    "himself", "she", "her", "hers", "herself", "it", "its", "itself",
+    "they", "them", "their", "theirs", "themselves", "what", "which", "who",
+    "whom", "this", "that", "these", "those", "am", "been", "being", "having",
+    "doing", "would", "could", "should", "might", "very", "just", "also",
+    "more", "most", "other", "some", "such", "only", "own", "same", "so",
+    "than", "too", "very", "just", "about", "into", "through", "during",
+    "before", "after", "above", "below", "between", "under", "again",
+    "further", "then", "once", "here", "there", "when", "where", "why", "how",
+    "all", "each", "few", "many", "no", "nor", "not", "any", "both", "find",
+    "think", "feel", "really", "like", "get", "make", "see", "know", "take",
+  ]);
+
+  const wordCounts: Record<string, number> = {};
+
+  texts.forEach((text) => {
+    const words = text.toLowerCase()
+      .replace(/[^\w\s]/g, "")
+      .split(/\s+/)
+      .filter((word) => word.length > 2 && !stopWords.has(word));
+
+    words.forEach((word) => {
+      wordCounts[word] = (wordCounts[word] || 0) + 1;
+    });
+  });
+
+  // Get top words
+  const sortedWords = Object.entries(wordCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 40);
+
+  if (sortedWords.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        Not enough text data to generate word cloud
+      </div>
+    );
+  }
+
+  const maxCount = sortedWords[0][1];
+  const minCount = sortedWords[sortedWords.length - 1][1];
+
+  // Generate colors and sizes
+  const getWordStyle = (count: number, index: number) => {
+    const normalizedCount = maxCount === minCount
+      ? 1
+      : (count - minCount) / (maxCount - minCount);
+
+    // Size: 0.75rem to 2rem based on frequency
+    const fontSize = 0.75 + normalizedCount * 1.25;
+
+    // Color palette
+    const colors = [
+      "text-blue-600", "text-indigo-600", "text-purple-600",
+      "text-pink-600", "text-emerald-600", "text-teal-600",
+      "text-cyan-600", "text-sky-600", "text-violet-600",
+    ];
+    const colorClass = colors[index % colors.length];
+
+    // Opacity based on rank
+    const opacity = 0.6 + (1 - index / sortedWords.length) * 0.4;
+
+    return {
+      fontSize: `${fontSize}rem`,
+      opacity,
+      className: colorClass,
+    };
+  };
+
+  // Shuffle for visual variety
+  const shuffledWords = [...sortedWords].sort(() => Math.random() - 0.5);
+
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 py-4 min-h-[200px]">
+      {shuffledWords.map(([word, count], index) => {
+        const style = getWordStyle(count, sortedWords.findIndex(([w]) => w === word));
+        return (
+          <span
+            key={word}
+            className={`font-medium cursor-default hover:scale-110 transition-transform ${style.className}`}
+            style={{ fontSize: style.fontSize, opacity: style.opacity }}
+            title={`${word}: ${count} occurrences`}
+          >
+            {word}
+          </span>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function StudyResultsPage({
@@ -409,6 +894,7 @@ export default function StudyResultsPage({
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="questions">By Question</TabsTrigger>
+          <TabsTrigger value="demographics">Demographics</TabsTrigger>
           <TabsTrigger value="sentiment">Sentiment Analysis</TabsTrigger>
           <TabsTrigger value="responses">Sample Responses</TabsTrigger>
         </TabsList>
@@ -578,6 +1064,14 @@ export default function StudyResultsPage({
           </Card>
         </TabsContent>
 
+        {/* Demographics Tab */}
+        <TabsContent value="demographics" className="space-y-6">
+          <DemographicsAnalysis
+            study={study}
+            questionStats={questionStats}
+          />
+        </TabsContent>
+
         {/* Sentiment Analysis Tab */}
         <TabsContent value="sentiment" className="space-y-6">
           {sentimentData ? (
@@ -690,32 +1184,19 @@ export default function StudyResultsPage({
                 </CardContent>
               </Card>
 
-              {/* Top Keywords */}
+              {/* Word Cloud */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Hash className="h-5 w-5 text-blue-500" />
-                    Top Keywords
+                    Word Cloud
                   </CardTitle>
                   <CardDescription>
-                    Most frequently mentioned terms across all responses
+                    Visual representation of most frequent terms
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {sentimentData.topKeywords.map((keyword, i) => (
-                      <Badge
-                        key={keyword}
-                        variant={i < 5 ? "default" : "secondary"}
-                        className="text-sm"
-                      >
-                        {keyword}
-                      </Badge>
-                    ))}
-                  </div>
-                  {sentimentData.topKeywords.length === 0 && (
-                    <p className="text-gray-500 text-sm">No keywords extracted</p>
-                  )}
+                  <WordCloud texts={allTextResponses} />
                 </CardContent>
               </Card>
 

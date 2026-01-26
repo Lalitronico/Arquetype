@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { FileText, Plus, Search, MoreVertical, Loader2, Play, RefreshCw } from "lucide-react";
+import { FileText, Plus, Search, MoreVertical, Loader2, Play, RefreshCw, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,7 +28,7 @@ interface Study {
   id: string;
   name: string;
   description: string | null;
-  status: "draft" | "running" | "completed" | "archived";
+  status: "draft" | "running" | "completed" | "archived" | "cancelled";
   sampleSize: number;
   questions: Array<{ id: string; text: string }>;
   creditsUsed: number;
@@ -36,11 +36,12 @@ interface Study {
   completedAt: string | null;
 }
 
-const statusColors = {
+const statusColors: Record<string, string> = {
   draft: "bg-gray-100 text-gray-700",
   running: "bg-blue-100 text-blue-700",
   completed: "bg-green-100 text-green-700",
   archived: "bg-orange-100 text-orange-700",
+  cancelled: "bg-red-100 text-red-700",
 };
 
 export default function StudiesPage() {
@@ -144,12 +145,20 @@ export default function StudiesPage() {
             Manage your synthetic research studies
           </p>
         </div>
-        <Link href="/dashboard/studies/new">
-          <Button variant="gradient" className="gap-2">
-            <Plus className="h-4 w-4" />
-            New Study
-          </Button>
-        </Link>
+        <div className="flex gap-3">
+          <Link href="/dashboard/compare">
+            <Button variant="outline" className="gap-2">
+              <LineChart className="h-4 w-4" />
+              Compare Studies
+            </Button>
+          </Link>
+          <Link href="/dashboard/studies/new">
+            <Button variant="gradient" className="gap-2">
+              <Plus className="h-4 w-4" />
+              New Study
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Error Display */}

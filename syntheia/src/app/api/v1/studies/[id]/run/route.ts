@@ -117,10 +117,9 @@ async function handlePost(
 
     // Run simulation
     const ssrEngine = getSSREngine();
-    const simulationResults = await ssrEngine.simulatePanel(
+    const { results: simulationResults } = await ssrEngine.simulatePanel(
       panel,
-      surveyQuestions,
-      5 // concurrency
+      surveyQuestions
     );
 
     // Save respondents and responses to database

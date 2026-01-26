@@ -10,7 +10,7 @@ import {
 import { eq, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { getSSREngine, SurveyQuestion } from "@/lib/ssr-engine";
+import { getSSREngine, SurveyQuestion, ProductContext } from "@/lib/ssr-engine";
 import { generatePanel, PERSONA_PRESETS, PresetName } from "@/lib/persona-generator";
 
 async function getSession() {
@@ -102,10 +102,16 @@ export async function POST(
       );
     }
 
-    // Mark study as running
+    // Mark study as running with start time
+    const simulationStartTime = new Date().toISOString();
     await db
       .update(studies)
-      .set({ status: "running", updatedAt: new Date().toISOString() })
+      .set({
+        status: "running",
+        currentPersona: 0,
+        simulationStartedAt: simulationStartTime,
+        updatedAt: simulationStartTime,
+      })
       .where(eq(studies.id, studyId));
 
     // Parse study data
@@ -139,13 +145,59 @@ export async function POST(
       scaleMax: q.type === "nps" ? 10 : 5,
     }));
 
-    // Run simulation
+    // Build product context from study fields
+    const productContext: ProductContext | undefined =
+      (study.productName || study.productDescription || study.brandName ||
+       study.industry || study.productCategory || study.customContextInstructions)
+        ? {
+            productName: study.productName || undefined,
+            productDescription: study.productDescription || undefined,
+            brandName: study.brandName || undefined,
+            industry: study.industry || undefined,
+            productCategory: study.productCategory || undefined,
+            customContextInstructions: study.customContextInstructions || undefined,
+          }
+        : undefined;
+
+    // Run simulation with progress updates and cancellation support
     const ssrEngine = getSSREngine();
-    const simulationResults = await ssrEngine.simulatePanel(
+    const { results: simulationResults, cancelled } = await ssrEngine.simulatePanel(
       panel,
       surveyQuestions,
-      5 // concurrency
+      productContext,
+      async (current: number, total: number) => {
+        // Update progress in database
+        await db
+          .update(studies)
+          .set({
+            currentPersona: current,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(studies.id, studyId));
+      },
+      async () => {
+        // Check if study was cancelled
+        const [currentStudy] = await db
+          .select({ status: studies.status })
+          .from(studies)
+          .where(eq(studies.id, studyId));
+        return currentStudy?.status === "cancelled";
+      }
     );
+
+    // Handle cancellation
+    if (cancelled) {
+      return NextResponse.json({
+        success: false,
+        error: "Simulation was cancelled",
+        data: {
+          studyId,
+          status: "cancelled",
+          personasProcessed: simulationResults.length,
+          totalPersonas: panel.length,
+        },
+      });
+    }
 
     // Save respondents and responses to database
     const now = new Date().toISOString();
@@ -242,7 +294,7 @@ export async function POST(
 }
 
 function aggregateResults(
-  results: Awaited<ReturnType<ReturnType<typeof getSSREngine>["simulatePanel"]>>,
+  results: Awaited<ReturnType<ReturnType<typeof getSSREngine>["simulatePanel"]>>["results"],
   questions: SurveyQuestion[]
 ) {
   return questions.map((question) => {

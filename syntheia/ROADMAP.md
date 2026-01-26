@@ -28,29 +28,32 @@
 - [x] Sentiment analysis for results
 - [x] Rate limiting and retry logic for Anthropic API
 
+### Sprint 9: UX & Analysis Improvements
+- [x] Product/service context fields (name, description, brand, industry, category)
+- [x] Custom context instructions per study
+- [x] Real-time simulation progress indicator with estimated time
+- [x] Progress page showing persona being processed
+- [x] Demographic segment comparison analysis
+- [x] Word cloud visualization for text responses
+- [x] Demographic insights generation
+
 ---
 
 ## Upcoming Improvements
 
 ### High Priority
 
-#### Better Product/Service Context
-- [ ] Add product/service description field to studies
-- [ ] Include brand name, industry, and product category
-- [ ] Pass context to persona prompts for more relevant responses
-- [ ] Allow custom context instructions per study
-
-#### Simulation UX Improvements
-- [ ] Real-time progress indicator during simulation
-- [ ] Show estimated time remaining
-- [ ] Display persona being processed in UI
-- [ ] Add ability to cancel running simulations
+#### Simulation Cancellation
+- [x] Add ability to cancel running simulations
+- [x] Graceful cleanup of partial results
+- [x] Option to keep or discard partial results
+- [x] Cancel button with confirmation dialog
 
 #### Results Enhancement
-- [ ] More detailed statistical analysis
-- [ ] Comparison between demographic segments
-- [ ] Word cloud for open-ended responses
-- [ ] Trend analysis across multiple studies
+- [x] Trend analysis across multiple studies
+- [x] Cross-study comparison dashboard
+- [x] Common question detection across studies
+- [x] Key insights generation for trends
 
 ### Medium Priority
 
