@@ -110,6 +110,7 @@ interface QuestionStat {
   sampleResponses: Array<{
     rating: number | null;
     explanation: string | null;
+    textResponse?: string | null;
     persona?: {
       demographics: {
         age: number;
@@ -118,6 +119,43 @@ interface QuestionStat {
       };
     };
   }>;
+  textResponses?: string[];
+  topKeywords?: string[];
+}
+
+// Helper function to extract top keywords from text responses
+function extractTopKeywords(texts: string[], limit: number = 5): string[] {
+  const stopWords = new Set([
+    "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
+    "of", "with", "by", "from", "as", "is", "was", "are", "were", "been",
+    "be", "have", "has", "had", "do", "does", "did", "will", "would", "could",
+    "should", "may", "might", "must", "i", "me", "my", "we", "our", "you",
+    "your", "he", "him", "his", "she", "her", "it", "its", "they", "them",
+    "their", "this", "that", "these", "those", "am", "been", "being",
+    "very", "just", "also", "more", "most", "other", "some", "such", "only",
+    "than", "too", "about", "into", "through", "during", "before", "after",
+    "all", "each", "few", "many", "no", "not", "any", "both", "like", "get",
+    "make", "see", "know", "take", "think", "feel", "really", "find", "use",
+    "used", "using", "because", "when", "where", "which", "who", "what", "how",
+  ]);
+
+  const wordCounts: Record<string, number> = {};
+
+  texts.forEach((text) => {
+    const words = text.toLowerCase()
+      .replace(/[^\w\s]/g, "")
+      .split(/\s+/)
+      .filter((word) => word.length > 3 && !stopWords.has(word));
+
+    words.forEach((word) => {
+      wordCounts[word] = (wordCounts[word] || 0) + 1;
+    });
+  });
+
+  return Object.entries(wordCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([word]) => word);
 }
 
 // Demographics Analysis Component
@@ -721,6 +759,9 @@ export default function StudyResultsPage({
       };
     });
 
+    // Extract top keywords for open-ended questions
+    const topKeywords = normalizedType === "open_ended" ? extractTopKeywords(textResponses, 5) : [];
+
     return {
       ...question,
       type: normalizedType, // Use normalized type
@@ -732,6 +773,8 @@ export default function StudyResultsPage({
       avgConfidence,
       npsData,
       sampleResponses,
+      textResponses, // Include text responses for open-ended
+      topKeywords,
     };
   });
 
@@ -999,12 +1042,43 @@ export default function StudyResultsPage({
                     </div>
                   )}
                   {question.type === "open_ended" && (
-                    <div className="text-center py-4">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {question.totalResponses}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Text responses collected
+                    <div className="space-y-4">
+                      {/* Top Keywords */}
+                      {question.topKeywords && question.topKeywords.length > 0 && (
+                        <div>
+                          <div className="text-xs text-gray-500 mb-2">Top Themes</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {question.topKeywords.map((keyword, i) => (
+                              <span
+                                key={keyword}
+                                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  i === 0 ? "bg-blue-100 text-blue-700" :
+                                  i === 1 ? "bg-indigo-100 text-indigo-700" :
+                                  i === 2 ? "bg-purple-100 text-purple-700" :
+                                  "bg-gray-100 text-gray-700"
+                                }`}
+                              >
+                                {keyword}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Sample Response Preview */}
+                      {question.sampleResponses && question.sampleResponses.length > 0 && (
+                        <div>
+                          <div className="text-xs text-gray-500 mb-2">Sample Response</div>
+                          <p className="text-sm text-gray-600 italic line-clamp-3 bg-gray-50 p-2 rounded">
+                            &ldquo;{question.sampleResponses[0]?.textResponse || question.sampleResponses[0]?.explanation || "No response"}&rdquo;
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Response Count */}
+                      <div className="pt-2 border-t flex items-center justify-between">
+                        <span className="text-xs text-gray-500">{question.totalResponses} responses</span>
+                        <span className="text-xs text-blue-600 font-medium">View all →</span>
                       </div>
                     </div>
                   )}
