@@ -58,6 +58,22 @@ interface StudyData {
     text: string;
     type: string;
     options?: string[];
+    // Matrix question fields
+    items?: string[];
+    scaleMin?: number;
+    scaleMax?: number;
+    scaleLabels?: string[];
+    // Slider question fields
+    min?: number;
+    max?: number;
+    leftLabel?: string;
+    rightLabel?: string;
+    // Conditional logic
+    showIf?: {
+      questionId: string;
+      operator: string;
+      value: string | number;
+    };
   }>;
   results: {
     respondents: Array<{
@@ -88,6 +104,13 @@ interface StudyData {
       explanation: string | null;
       confidence: number | null;
       distribution: number[] | null;
+      // Matrix question fields
+      itemRatings?: Record<string, number> | null;
+      itemExplanations?: Record<string, string> | null;
+      avgRating?: number | null;
+      // Conditional logic
+      skipped?: boolean;
+      skipReason?: string | null;
     }>;
   } | null;
 }
@@ -123,6 +146,24 @@ interface QuestionStat {
   textResponses?: string[];
   topKeywords?: string[];
   options?: string[];
+  // Matrix question specific
+  items?: string[];
+  itemStats?: Record<string, { mean: number; distribution: number[] }>;
+  scaleMin?: number;
+  scaleMax?: number;
+  scaleLabels?: string[];
+  // Slider question specific
+  min?: number;
+  max?: number;
+  leftLabel?: string;
+  rightLabel?: string;
+  histogramBuckets?: number[];
+  percentile25?: number;
+  percentile75?: number;
+  // Conditional logic
+  skippedCount?: number;
+  skipRate?: number;
+  hasCondition?: boolean;
 }
 
 // Helper function to extract top keywords from text responses
@@ -691,12 +732,21 @@ export default function StudyResultsPage({
     // Normalize question type: treat "rating" same as "likert"
     const normalizedType = question.type === "rating" ? "likert" : question.type;
 
-    const ratings = questionResponses
+    // Calculate skipped responses for conditional questions
+    const skippedResponses = questionResponses.filter((r) => r.skipped);
+    const nonSkippedResponses = questionResponses.filter((r) => !r.skipped);
+    const skippedCount = skippedResponses.length;
+    const skipRate = questionResponses.length > 0
+      ? Math.round((skippedCount / questionResponses.length) * 100)
+      : 0;
+    const hasCondition = !!question.showIf;
+
+    const ratings = nonSkippedResponses
       .map((r) => r.rating)
       .filter((r): r is number => r !== null && r > 0);
 
     // For open-ended questions, count text responses instead of ratings
-    const textResponses = questionResponses
+    const textResponses = nonSkippedResponses
       .map((r) => r.textResponse)
       .filter((t): t is string => t !== null && t.length > 0);
 
@@ -724,6 +774,20 @@ export default function StudyResultsPage({
       distributionPercent = ratings.length > 0
         ? distribution.map((count) => Math.round((count / ratings.length) * 100))
         : distribution;
+    } else if (normalizedType === "slider") {
+      // For slider questions, create histogram buckets (10 buckets)
+      const buckets = 10;
+      const min = question.min ?? 0;
+      const max = question.max ?? 100;
+      const bucketSize = (max - min) / buckets;
+      const distribution = Array(buckets).fill(0);
+      ratings.forEach((r) => {
+        const bucketIndex = Math.min(Math.floor((r - min) / bucketSize), buckets - 1);
+        distribution[bucketIndex]++;
+      });
+      distributionPercent = ratings.length > 0
+        ? distribution.map((count) => Math.round((count / ratings.length) * 100))
+        : distribution;
     } else {
       const maxRating = normalizedType === "nps" ? 11 : 5;
       const distribution = Array(maxRating).fill(0);
@@ -744,6 +808,14 @@ export default function StudyResultsPage({
       : 0;
     const stdDev = Math.sqrt(variance);
 
+    // Calculate percentiles for slider questions
+    let percentile25 = 0;
+    let percentile75 = 0;
+    if (normalizedType === "slider" && sortedRatings.length > 0) {
+      percentile25 = sortedRatings[Math.floor(sortedRatings.length * 0.25)] || 0;
+      percentile75 = sortedRatings[Math.floor(sortedRatings.length * 0.75)] || 0;
+    }
+
     // NPS specific
     let npsData = null;
     if (normalizedType === "nps" && ratings.length > 0) {
@@ -759,8 +831,49 @@ export default function StudyResultsPage({
       };
     }
 
+    // Matrix question specific: calculate stats per item
+    let itemStats: Record<string, { mean: number; distribution: number[] }> | undefined;
+    if (normalizedType === "matrix" && question.items) {
+      itemStats = {};
+      const scaleMin = question.scaleMin || 1;
+      const scaleMax = question.scaleMax || 5;
+      const scaleSize = scaleMax - scaleMin + 1;
+
+      for (const item of question.items) {
+        const itemRatings: number[] = [];
+        nonSkippedResponses.forEach((r) => {
+          if (r.itemRatings && typeof r.itemRatings === "object") {
+            const rating = (r.itemRatings as Record<string, number>)[item];
+            if (typeof rating === "number") {
+              itemRatings.push(rating);
+            }
+          }
+        });
+
+        const itemMean = itemRatings.length > 0
+          ? itemRatings.reduce((a, b) => a + b, 0) / itemRatings.length
+          : 0;
+
+        const itemDistribution = Array(scaleSize).fill(0);
+        itemRatings.forEach((r) => {
+          const index = r - scaleMin;
+          if (index >= 0 && index < scaleSize) {
+            itemDistribution[index]++;
+          }
+        });
+        const itemDistributionPercent = itemRatings.length > 0
+          ? itemDistribution.map((count) => Math.round((count / itemRatings.length) * 100))
+          : itemDistribution;
+
+        itemStats[item] = {
+          mean: Math.round(itemMean * 100) / 100,
+          distribution: itemDistributionPercent,
+        };
+      }
+    }
+
     // Average confidence
-    const confidences = questionResponses
+    const confidences = nonSkippedResponses
       .map((r) => r.confidence)
       .filter((c): c is number => c !== null);
     const avgConfidence = confidences.length > 0
@@ -768,7 +881,7 @@ export default function StudyResultsPage({
       : 0;
 
     // Sample responses
-    const sampleResponses = questionResponses.slice(0, 5).map((r) => {
+    const sampleResponses = nonSkippedResponses.slice(0, 5).map((r) => {
       const respondent = study.results?.respondents.find(
         (resp) => resp.id === r.respondentId
       );
@@ -794,6 +907,16 @@ export default function StudyResultsPage({
       sampleResponses,
       textResponses, // Include text responses for open-ended
       topKeywords,
+      // Matrix question specific
+      itemStats,
+      // Slider question specific
+      histogramBuckets: normalizedType === "slider" ? distributionPercent : undefined,
+      percentile25: normalizedType === "slider" ? percentile25 : undefined,
+      percentile75: normalizedType === "slider" ? percentile75 : undefined,
+      // Conditional logic
+      skippedCount,
+      skipRate,
+      hasCondition,
     };
   });
 
@@ -986,7 +1109,14 @@ export default function StudyResultsPage({
                       ? "Open-ended"
                       : question.type === "multiple_choice"
                       ? "Multiple Choice"
+                      : question.type === "matrix"
+                      ? `Matrix (${question.items?.length || 0} items)`
+                      : question.type === "slider"
+                      ? `Slider (${question.min ?? 0}-${question.max ?? 100})`
                       : "5-point Likert Scale"}
+                    {question.hasCondition && (
+                      <span className="ml-2 text-amber-600">(Conditional)</span>
+                    )}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -1147,6 +1277,167 @@ export default function StudyResultsPage({
                       <div className="pt-2 border-t flex items-center justify-between">
                         <span className="text-xs text-gray-500">{question.totalResponses} responses</span>
                         <span className="text-xs text-blue-600 font-medium">View all →</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Matrix Question Heatmap */}
+                  {question.type === "matrix" && question.items && question.itemStats && (
+                    <div className="space-y-4">
+                      {/* Heatmap Grid */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr>
+                              <th className="text-left pb-2 pr-4"></th>
+                              {Array.from({ length: (question.scaleMax || 5) - (question.scaleMin || 1) + 1 }, (_, i) => (
+                                <th key={i} className="text-center pb-2 px-2 w-10">
+                                  <div className="font-medium text-gray-600">{(question.scaleMin || 1) + i}</div>
+                                  {question.scaleLabels?.[i] && (
+                                    <div className="text-[10px] text-gray-400 truncate max-w-10">
+                                      {question.scaleLabels[i]}
+                                    </div>
+                                  )}
+                                </th>
+                              ))}
+                              <th className="text-center pb-2 px-2 w-16">Mean</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {question.items.map((item) => {
+                              const stats = question.itemStats?.[item];
+                              const scaleMin = question.scaleMin || 1;
+                              const scaleMax = question.scaleMax || 5;
+                              return (
+                                <tr key={item} className="border-t">
+                                  <td className="py-2 pr-4 font-medium text-gray-700 truncate max-w-32" title={item}>
+                                    {item}
+                                  </td>
+                                  {stats?.distribution.map((pct, i) => {
+                                    // Color intensity based on percentage
+                                    const intensity = Math.min(pct / 50, 1);
+                                    const bgColor = pct > 0
+                                      ? `rgba(59, 130, 246, ${0.1 + intensity * 0.7})`
+                                      : "transparent";
+                                    return (
+                                      <td
+                                        key={i}
+                                        className="text-center py-2 px-1"
+                                        style={{ backgroundColor: bgColor }}
+                                      >
+                                        <span className={`text-xs ${pct > 30 ? "font-medium" : ""}`}>
+                                          {pct > 0 ? `${pct}%` : ""}
+                                        </span>
+                                      </td>
+                                    );
+                                  })}
+                                  <td className="text-center py-2 px-2">
+                                    <span className={`font-bold ${
+                                      (stats?.mean || 0) >= 4 ? "text-green-600" :
+                                      (stats?.mean || 0) >= 3 ? "text-yellow-600" :
+                                      "text-red-600"
+                                    }`}>
+                                      {stats?.mean.toFixed(1) || "-"}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Summary Stats */}
+                      <div className="flex gap-6 pt-4 border-t">
+                        <div>
+                          <div className="text-2xl font-bold text-blue-600">
+                            {question.mean}
+                          </div>
+                          <div className="text-xs text-gray-500">Overall Mean</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-blue-600">
+                            {question.stdDev}
+                          </div>
+                          <div className="text-xs text-gray-500">Std Dev</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-gray-600">
+                            {question.totalResponses}
+                          </div>
+                          <div className="text-xs text-gray-500">Responses</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Slider Question Histogram */}
+                  {question.type === "slider" && (
+                    <div className="space-y-4">
+                      {/* Histogram Bars */}
+                      <div>
+                        <div className="flex justify-between text-xs text-gray-400 mb-1">
+                          <span>{question.leftLabel || (question.min ?? 0)}</span>
+                          <span>{question.rightLabel || (question.max ?? 100)}</span>
+                        </div>
+                        <div className="flex items-end gap-0.5 h-24">
+                          {question.distribution.map((pct, i) => (
+                            <div
+                              key={i}
+                              className="flex-1 bg-purple-500 rounded-t transition-all hover:bg-purple-600"
+                              style={{ height: `${Math.max(pct * 2, 2)}%` }}
+                              title={`${pct}%`}
+                            />
+                          ))}
+                        </div>
+                        <div className="flex justify-between text-[10px] text-gray-400 mt-1">
+                          {[0, 25, 50, 75, 100].map((pct) => {
+                            const value = Math.round((question.min ?? 0) + ((question.max ?? 100) - (question.min ?? 0)) * (pct / 100));
+                            return <span key={pct}>{value}</span>;
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Summary Stats */}
+                      <div className="grid grid-cols-4 gap-4 pt-4 border-t text-center">
+                        <div>
+                          <div className="text-xl font-bold text-purple-600">
+                            {question.mean}
+                          </div>
+                          <div className="text-xs text-gray-500">Mean</div>
+                        </div>
+                        <div>
+                          <div className="text-xl font-bold text-purple-600">
+                            {question.median}
+                          </div>
+                          <div className="text-xs text-gray-500">Median</div>
+                        </div>
+                        <div>
+                          <div className="text-xl font-bold text-gray-600">
+                            {question.percentile25 || "-"}
+                          </div>
+                          <div className="text-xs text-gray-500">25th %ile</div>
+                        </div>
+                        <div>
+                          <div className="text-xl font-bold text-gray-600">
+                            {question.percentile75 || "-"}
+                          </div>
+                          <div className="text-xs text-gray-500">75th %ile</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Skip Rate for Conditional Questions */}
+                  {question.hasCondition && question.skippedCount !== undefined && question.skippedCount > 0 && (
+                    <div className="mt-4 pt-3 border-t">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-amber-700">
+                          Conditional: {question.totalResponses} answered, {question.skippedCount} skipped
+                        </span>
+                        <span className="text-amber-600 font-medium">
+                          {100 - (question.skipRate || 0)}% response rate
+                        </span>
                       </div>
                     </div>
                   )}

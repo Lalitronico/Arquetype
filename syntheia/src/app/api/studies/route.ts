@@ -6,6 +6,13 @@ import { eq, desc, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
+// Condition schema for conditional logic
+const QuestionConditionSchema = z.object({
+  questionId: z.string(),
+  operator: z.enum(["equals", "notEquals", "greaterThan", "lessThan", "contains"]),
+  value: z.union([z.string(), z.number()]),
+});
+
 // Validation schemas
 const CreateStudySchema = z.object({
   name: z.string().min(1).max(200),
@@ -13,10 +20,23 @@ const CreateStudySchema = z.object({
   questions: z.array(
     z.object({
       id: z.string(),
-      type: z.enum(["likert", "nps", "multiple_choice", "ranking", "open_ended"]),
+      type: z.enum(["likert", "nps", "multiple_choice", "ranking", "open_ended", "matrix", "slider"]),
       text: z.string().min(1),
       options: z.array(z.string()).optional(),
       required: z.boolean().default(true),
+      // Matrix question fields
+      items: z.array(z.string()).optional(),
+      scaleMin: z.number().min(0).max(10).optional(),
+      scaleMax: z.number().min(1).max(10).optional(),
+      scaleLabels: z.array(z.string()).optional(),
+      // Slider question fields
+      min: z.number().optional(),
+      max: z.number().optional(),
+      step: z.number().min(1).optional(),
+      leftLabel: z.string().max(100).optional(),
+      rightLabel: z.string().max(100).optional(),
+      // Conditional logic
+      showIf: QuestionConditionSchema.optional(),
     })
   ),
   panelConfig: z

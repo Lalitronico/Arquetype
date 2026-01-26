@@ -33,9 +33,17 @@ export interface SyntheticPersona {
   };
 }
 
+// Condition for showing/hiding questions based on previous responses
+export interface QuestionCondition {
+  questionId: string;    // ID of the reference question
+  operator: "equals" | "notEquals" | "greaterThan" | "lessThan" | "contains";
+  value: string | number;
+}
+
+// Base survey question interface
 export interface SurveyQuestion {
   id: string;
-  type: "likert" | "nps" | "multiple_choice" | "ranking" | "open_ended";
+  type: "likert" | "nps" | "multiple_choice" | "ranking" | "open_ended" | "matrix" | "slider";
   text: string;
   options?: string[];
   scaleMin?: number;
@@ -45,6 +53,37 @@ export interface SurveyQuestion {
     high: string;
     labels?: string[];
   };
+  // Conditional logic - if undefined, question is always shown
+  showIf?: QuestionCondition;
+  // Matrix question specific fields
+  items?: string[];        // Items to rate: ["Price", "Quality", "Service"]
+  scaleLabels?: string[];  // Labels for each scale point
+  // Slider question specific fields
+  min?: number;            // Minimum value (e.g., 0)
+  max?: number;            // Maximum value (e.g., 100)
+  step?: number;           // Step increment (e.g., 1)
+  leftLabel?: string;      // Label for left/min end
+  rightLabel?: string;     // Label for right/max end
+}
+
+// Matrix question response
+export interface MatrixResponse {
+  questionId: string;
+  itemRatings: Record<string, number>;       // { "Price": 4, "Quality": 5 }
+  itemExplanations: Record<string, string>;  // Explanations for each rating
+  avgRating: number;
+  confidence: number;
+  rawTextResponse: string;
+}
+
+// Slider question response
+export interface SliderResponse {
+  questionId: string;
+  rating: number;          // 0-100 (can be decimal)
+  explanation: string;
+  confidence: number;
+  rawTextResponse: string;
+  distribution?: number[]; // Histogram buckets
 }
 
 // Product/Service context for more relevant responses
@@ -64,6 +103,13 @@ export interface SSRResponse {
   confidence: number;
   rawTextResponse: string;
   distribution?: number[];
+  // Matrix question specific fields
+  itemRatings?: Record<string, number>;
+  itemExplanations?: Record<string, string>;
+  avgRating?: number;
+  // Conditional logic - whether this question was skipped
+  skipped?: boolean;
+  skipReason?: string;
 }
 
 export interface SimulationResult {
@@ -418,6 +464,16 @@ Pick the option that fits you best and briefly explain why. Start your response 
       };
     }
 
+    // For matrix questions - rate multiple items on the same scale
+    if (question.type === "matrix" && question.items && question.items.length > 0) {
+      return this.generateMatrixResponse(persona, question, productContext);
+    }
+
+    // For slider questions - continuous scale (0-100)
+    if (question.type === "slider") {
+      return this.generateSliderResponse(persona, question, productContext);
+    }
+
     // For Likert/NPS scales, use SSR methodology
     const textResponse = await this.generateTextResponse(persona, question, productContext);
     const { rating, distribution, confidence } = await this.mapToLikert(
@@ -436,7 +492,223 @@ Pick the option that fits you best and briefly explain why. Start your response 
   }
 
   /**
+   * Generate matrix question response - rate multiple items in a single LLM call
+   */
+  private async generateMatrixResponse(
+    persona: SyntheticPersona,
+    question: SurveyQuestion,
+    productContext?: ProductContext
+  ): Promise<SSRResponse> {
+    const items = question.items || [];
+    const scaleMin = question.scaleMin || 1;
+    const scaleMax = question.scaleMax || 5;
+    const scaleLabels = question.scaleLabels || [];
+
+    const personaPrompt = this.buildPersonaPrompt(persona, productContext);
+
+    // Build scale description
+    let scaleDescription = `Scale: ${scaleMin} to ${scaleMax}`;
+    if (scaleLabels.length > 0) {
+      scaleDescription += ` (${scaleLabels.join(", ")})`;
+    }
+
+    const prompt = `Rate each of the following items based on the question.
+
+Question: "${question.text}"
+
+Items to rate:
+${items.map((item, i) => `${i + 1}. ${item}`).join("\n")}
+
+${scaleDescription}
+
+For each item, provide a rating and a brief reason (1 sentence).
+
+Respond ONLY as JSON in this exact format:
+{
+  "ratings": [
+    {"item": "item name", "rating": <number ${scaleMin}-${scaleMax}>, "reason": "brief explanation"}
+  ]
+}`;
+
+    try {
+      const response = await this.callWithRetry(async () => {
+        return this.anthropic.messages.create({
+          model: "claude-3-haiku-20240307",
+          max_tokens: 800,
+          system: personaPrompt,
+          messages: [{ role: "user", content: prompt }],
+        });
+      });
+
+      const textBlock = response.content.find((block) => block.type === "text");
+      const text = textBlock?.type === "text" ? textBlock.text : "";
+
+      // Parse JSON response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        const itemRatings: Record<string, number> = {};
+        const itemExplanations: Record<string, string> = {};
+
+        if (parsed.ratings && Array.isArray(parsed.ratings)) {
+          for (const r of parsed.ratings) {
+            const rating = Math.min(Math.max(Number(r.rating) || scaleMin, scaleMin), scaleMax);
+            itemRatings[r.item] = rating;
+            itemExplanations[r.item] = r.reason || "";
+          }
+        }
+
+        // Calculate average rating
+        const ratings = Object.values(itemRatings);
+        const avgRating = ratings.length > 0
+          ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 100) / 100
+          : (scaleMin + scaleMax) / 2;
+
+        return {
+          questionId: question.id,
+          rating: avgRating,
+          explanation: Object.entries(itemExplanations).map(([k, v]) => `${k}: ${v}`).join("; "),
+          confidence: 0.85,
+          rawTextResponse: text,
+          itemRatings,
+          itemExplanations,
+          avgRating,
+        };
+      }
+    } catch (error) {
+      console.error("Error generating matrix response:", error);
+    }
+
+    // Fallback: return middle ratings for all items
+    const midRating = Math.round((scaleMin + scaleMax) / 2);
+    const itemRatings: Record<string, number> = {};
+    const itemExplanations: Record<string, string> = {};
+    items.forEach(item => {
+      itemRatings[item] = midRating;
+      itemExplanations[item] = "Unable to generate response";
+    });
+
+    return {
+      questionId: question.id,
+      rating: midRating,
+      explanation: "Fallback response",
+      confidence: 0.5,
+      rawTextResponse: "",
+      itemRatings,
+      itemExplanations,
+      avgRating: midRating,
+    };
+  }
+
+  /**
+   * Generate slider question response - continuous scale
+   */
+  private async generateSliderResponse(
+    persona: SyntheticPersona,
+    question: SurveyQuestion,
+    productContext?: ProductContext
+  ): Promise<SSRResponse> {
+    const min = question.min ?? 0;
+    const max = question.max ?? 100;
+    const leftLabel = question.leftLabel || "Minimum";
+    const rightLabel = question.rightLabel || "Maximum";
+
+    // First generate a natural text response
+    const textResponse = await this.generateTextResponse(persona, question, productContext);
+
+    // Then analyze and map to continuous scale
+    const prompt = `Analyze this response and provide a precise numeric score.
+
+Question: "${question.text}"
+Scale: ${min} (${leftLabel}) to ${max} (${rightLabel})
+Response: "${textResponse}"
+
+Based on the sentiment and content of the response, provide a precise numeric score.
+The score can be any number between ${min} and ${max}, including decimals for precision.
+
+Respond ONLY as JSON:
+{"rating": <number>, "confidence": <0.0-1.0>}`;
+
+    try {
+      const response = await this.callWithRetry(async () => {
+        return this.anthropic.messages.create({
+          model: "claude-3-haiku-20240307",
+          max_tokens: 100,
+          messages: [{ role: "user", content: prompt }],
+        });
+      });
+
+      const textBlock = response.content.find((block) => block.type === "text");
+      const text = textBlock?.type === "text" ? textBlock.text : "";
+
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        const rating = Math.min(Math.max(Number(parsed.rating) || (min + max) / 2, min), max);
+        const confidence = Math.min(Math.max(parsed.confidence || 0.7, 0), 1);
+
+        // Generate histogram distribution for visualization
+        const distribution = this.generateHistogramDistribution(rating, min, max);
+
+        return {
+          questionId: question.id,
+          rating: Math.round(rating * 10) / 10, // Round to 1 decimal place
+          explanation: textResponse,
+          confidence,
+          rawTextResponse: textResponse,
+          distribution,
+        };
+      }
+    } catch (error) {
+      console.error("Error generating slider response:", error);
+    }
+
+    // Fallback
+    const midRating = (min + max) / 2;
+    return {
+      questionId: question.id,
+      rating: midRating,
+      explanation: textResponse,
+      confidence: 0.5,
+      rawTextResponse: textResponse,
+      distribution: this.generateHistogramDistribution(midRating, min, max),
+    };
+  }
+
+  /**
+   * Generate histogram distribution for slider visualization
+   * Returns 10 buckets representing the distribution
+   */
+  private generateHistogramDistribution(
+    rating: number,
+    min: number,
+    max: number
+  ): number[] {
+    const buckets = 10;
+    const distribution = new Array(buckets).fill(0);
+    const range = max - min;
+    const bucketSize = range / buckets;
+
+    // Find which bucket the rating falls into
+    const ratingBucket = Math.min(
+      Math.floor((rating - min) / bucketSize),
+      buckets - 1
+    );
+
+    // Create a bell curve centered on the rating bucket
+    for (let i = 0; i < buckets; i++) {
+      const distance = Math.abs(i - ratingBucket);
+      distribution[i] = Math.exp(-distance * 0.5);
+    }
+
+    // Normalize
+    const sum = distribution.reduce((a, b) => a + b, 0);
+    return distribution.map(d => Math.round((d / sum) * 100));
+  }
+
+  /**
    * Run a complete simulation for a persona
+   * Handles conditional logic (showIf) for questions
    */
   async simulatePersona(
     persona: SyntheticPersona,
@@ -445,10 +717,30 @@ Pick the option that fits you best and briefly explain why. Start your response 
   ): Promise<SimulationResult> {
     const startTime = Date.now();
     const responses: SSRResponse[] = [];
+    const answeredQuestions = new Map<string, SSRResponse>();
 
     for (const question of questions) {
+      // Evaluate conditional logic
+      if (question.showIf) {
+        const refResponse = answeredQuestions.get(question.showIf.questionId);
+        if (!refResponse || !this.evaluateCondition(refResponse, question.showIf)) {
+          // Skip this question - condition not met
+          responses.push({
+            questionId: question.id,
+            rating: 0,
+            explanation: "",
+            confidence: 0,
+            rawTextResponse: "",
+            skipped: true,
+            skipReason: `Condition not met: Question ${question.showIf.questionId} ${question.showIf.operator} ${question.showIf.value}`,
+          });
+          continue;
+        }
+      }
+
       const response = await this.generateResponse(persona, question, productContext);
       responses.push(response);
+      answeredQuestions.set(question.id, response);
     }
 
     return {
@@ -460,6 +752,54 @@ Pick the option that fits you best and briefly explain why. Start your response 
         processingTimeMs: Date.now() - startTime,
       },
     };
+  }
+
+  /**
+   * Evaluate a condition against a previous response
+   */
+  private evaluateCondition(response: SSRResponse, condition: QuestionCondition): boolean {
+    const { operator, value } = condition;
+
+    switch (operator) {
+      case "equals":
+        // Check numeric equality first
+        if (typeof value === "number") {
+          return response.rating === value;
+        }
+        // Check string equality (case-insensitive)
+        return (
+          response.rating === Number(value) ||
+          response.explanation?.toLowerCase().includes(String(value).toLowerCase()) ||
+          response.rawTextResponse?.toLowerCase().includes(String(value).toLowerCase())
+        );
+
+      case "notEquals":
+        if (typeof value === "number") {
+          return response.rating !== value;
+        }
+        return (
+          response.rating !== Number(value) &&
+          !response.explanation?.toLowerCase().includes(String(value).toLowerCase()) &&
+          !response.rawTextResponse?.toLowerCase().includes(String(value).toLowerCase())
+        );
+
+      case "greaterThan":
+        return (response.rating || 0) > Number(value);
+
+      case "lessThan":
+        return (response.rating || 0) < Number(value);
+
+      case "contains":
+        const searchValue = String(value).toLowerCase();
+        return (
+          response.explanation?.toLowerCase().includes(searchValue) ||
+          response.rawTextResponse?.toLowerCase().includes(searchValue) ||
+          false
+        );
+
+      default:
+        return true;
+    }
   }
 
   /**

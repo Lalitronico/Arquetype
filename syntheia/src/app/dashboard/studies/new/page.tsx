@@ -47,14 +47,39 @@ import { Progress } from "@/components/ui/progress";
 import { surveyTemplates, templateCategories, type SurveyTemplate } from "@/lib/survey-templates";
 import { PersonaBuilder } from "@/components/persona-builder";
 import { PersonaConfig, PERSONA_PRESETS } from "@/lib/persona-generator";
+import {
+  MatrixQuestionConfig,
+  SliderQuestionConfig,
+  ConditionalLogicConfig,
+} from "@/components/question-builder";
+
+// Question condition for conditional logic
+interface QuestionCondition {
+  questionId: string;
+  operator: "equals" | "notEquals" | "greaterThan" | "lessThan" | "contains";
+  value: string | number;
+}
 
 interface Question {
   id: string;
-  type: "likert" | "nps" | "multiple_choice" | "open_ended" | "rating" | "open";
+  type: "likert" | "nps" | "multiple_choice" | "open_ended" | "rating" | "open" | "matrix" | "slider";
   text: string;
   options?: string[];
   required: boolean;
   scale?: { min: number; max: number; labels?: { min: string; max: string } };
+  // Matrix question fields
+  items?: string[];
+  scaleMin?: number;
+  scaleMax?: number;
+  scaleLabels?: string[];
+  // Slider question fields
+  min?: number;
+  max?: number;
+  step?: number;
+  leftLabel?: string;
+  rightLabel?: string;
+  // Conditional logic
+  showIf?: QuestionCondition;
 }
 
 const QUESTION_TYPES = [
@@ -62,6 +87,8 @@ const QUESTION_TYPES = [
   { value: "nps", label: "NPS (0-10)", description: "Net Promoter Score" },
   { value: "multiple_choice", label: "Multiple Choice", description: "Select one option" },
   { value: "open_ended", label: "Open Ended", description: "Free text response" },
+  { value: "matrix", label: "Matrix", description: "Rate multiple items" },
+  { value: "slider", label: "Slider (0-100)", description: "Continuous scale" },
 ];
 
 const INDUSTRIES = [
@@ -635,6 +662,60 @@ export default function NewStudyPage() {
                           rows={4}
                         />
                       </div>
+                    )}
+
+                    {/* Matrix Question Configuration */}
+                    {question.type === "matrix" && (
+                      <MatrixQuestionConfig
+                        value={{
+                          items: question.items || [],
+                          scaleMin: question.scaleMin || 1,
+                          scaleMax: question.scaleMax || 5,
+                          scaleLabels: question.scaleLabels || ["Very Poor", "Poor", "Average", "Good", "Excellent"],
+                        }}
+                        onChange={(config) =>
+                          updateQuestion(question.id, {
+                            items: config.items,
+                            scaleMin: config.scaleMin,
+                            scaleMax: config.scaleMax,
+                            scaleLabels: config.scaleLabels,
+                          })
+                        }
+                      />
+                    )}
+
+                    {/* Slider Question Configuration */}
+                    {question.type === "slider" && (
+                      <SliderQuestionConfig
+                        value={{
+                          min: question.min ?? 0,
+                          max: question.max ?? 100,
+                          step: question.step ?? 1,
+                          leftLabel: question.leftLabel || "Not at all likely",
+                          rightLabel: question.rightLabel || "Extremely likely",
+                        }}
+                        onChange={(config) =>
+                          updateQuestion(question.id, {
+                            min: config.min,
+                            max: config.max,
+                            step: config.step,
+                            leftLabel: config.leftLabel,
+                            rightLabel: config.rightLabel,
+                          })
+                        }
+                      />
+                    )}
+
+                    {/* Conditional Logic Configuration */}
+                    {index > 0 && (
+                      <ConditionalLogicConfig
+                        condition={question.showIf}
+                        onChange={(condition) =>
+                          updateQuestion(question.id, { showIf: condition })
+                        }
+                        availableQuestions={questions.slice(0, index)}
+                        currentQuestionId={question.id}
+                      />
                     )}
                   </div>
                 </div>
