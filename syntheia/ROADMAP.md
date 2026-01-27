@@ -58,13 +58,13 @@
 ### Medium Priority
 
 #### Response Quality & Naturalness
-- [ ] Remove formulaic response patterns ("As a [age]-year-old [gender]...")
-- [ ] Make responses sound more human and conversational
-- [ ] Avoid repeating demographic info in responses (already in persona context)
-- [ ] Vary response styles based on persona personality traits
-- [ ] Add natural language variation and authenticity
-- [ ] Reduce token waste from demographic repetition
-- [ ] Test different prompt engineering approaches for more natural outputs
+- [x] Remove formulaic response patterns ("As a [age]-year-old [gender]...")
+- [x] Make responses sound more human and conversational
+- [x] Avoid repeating demographic info in responses (already in persona context)
+- [x] Vary response styles based on persona personality traits (12 personality types)
+- [x] Add natural language variation and authenticity
+- [x] Reduce token waste from demographic repetition
+- [x] Test different prompt engineering approaches for more natural outputs
 
 #### Persona Customization
 - [x] Custom persona builder
@@ -74,10 +74,10 @@
 - [x] Sample size calculator (confidence level, margin of error, population size)
 
 #### Advanced Question Types
-- [ ] Matrix questions
-- [ ] Slider scales
-- [ ] Image-based questions
-- [ ] Conditional logic / branching
+- [x] Matrix questions
+- [x] Slider scales
+- [x] Image-based questions (Claude Vision)
+- [x] Conditional logic / branching
 
 #### Collaboration Features
 - [ ] Team member invitations
