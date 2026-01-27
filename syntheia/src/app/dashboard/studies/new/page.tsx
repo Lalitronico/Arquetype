@@ -51,6 +51,7 @@ import {
   MatrixQuestionConfig,
   SliderQuestionConfig,
   ConditionalLogicConfig,
+  ImageQuestionConfig,
 } from "@/components/question-builder";
 
 // Question condition for conditional logic
@@ -62,7 +63,7 @@ interface QuestionCondition {
 
 interface Question {
   id: string;
-  type: "likert" | "nps" | "multiple_choice" | "open_ended" | "rating" | "open" | "matrix" | "slider";
+  type: "likert" | "nps" | "multiple_choice" | "open_ended" | "rating" | "open" | "matrix" | "slider" | "image_rating" | "image_choice" | "image_comparison";
   text: string;
   options?: string[];
   required: boolean;
@@ -78,6 +79,14 @@ interface Question {
   step?: number;
   leftLabel?: string;
   rightLabel?: string;
+  // Image question fields
+  imageUrl?: string;
+  imageUrls?: string[];
+  imageLabels?: string[];
+  imagePrompt?: string;
+  imageScaleMin?: number;
+  imageScaleMax?: number;
+  imageScaleLabels?: { low: string; high: string };
   // Conditional logic
   showIf?: QuestionCondition;
 }
@@ -89,6 +98,9 @@ const QUESTION_TYPES = [
   { value: "open_ended", label: "Open Ended", description: "Free text response" },
   { value: "matrix", label: "Matrix", description: "Rate multiple items" },
   { value: "slider", label: "Slider (0-100)", description: "Continuous scale" },
+  { value: "image_rating", label: "Image Rating", description: "Rate an image" },
+  { value: "image_choice", label: "Image + Options", description: "Image with choices" },
+  { value: "image_comparison", label: "Image Comparison", description: "Compare images" },
 ];
 
 const INDUSTRIES = [
@@ -702,6 +714,33 @@ export default function NewStudyPage() {
                             step: config.step,
                             leftLabel: config.leftLabel,
                             rightLabel: config.rightLabel,
+                          })
+                        }
+                      />
+                    )}
+
+                    {/* Image Question Configuration */}
+                    {(question.type === "image_rating" || question.type === "image_choice" || question.type === "image_comparison") && (
+                      <ImageQuestionConfig
+                        questionType={question.type}
+                        value={{
+                          imageUrl: question.imageUrl,
+                          imageUrls: question.imageUrls,
+                          imageLabels: question.imageLabels,
+                          imagePrompt: question.imagePrompt,
+                          imageScaleMin: question.imageScaleMin ?? 1,
+                          imageScaleMax: question.imageScaleMax ?? 5,
+                          imageScaleLabels: question.imageScaleLabels || { low: "Very Poor", high: "Excellent" },
+                        }}
+                        onChange={(config) =>
+                          updateQuestion(question.id, {
+                            imageUrl: config.imageUrl,
+                            imageUrls: config.imageUrls,
+                            imageLabels: config.imageLabels,
+                            imagePrompt: config.imagePrompt,
+                            imageScaleMin: config.imageScaleMin,
+                            imageScaleMax: config.imageScaleMax,
+                            imageScaleLabels: config.imageScaleLabels,
                           })
                         }
                       />

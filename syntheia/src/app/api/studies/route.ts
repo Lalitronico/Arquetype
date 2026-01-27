@@ -20,7 +20,7 @@ const CreateStudySchema = z.object({
   questions: z.array(
     z.object({
       id: z.string(),
-      type: z.enum(["likert", "nps", "multiple_choice", "ranking", "open_ended", "matrix", "slider"]),
+      type: z.enum(["likert", "nps", "multiple_choice", "ranking", "open_ended", "matrix", "slider", "image_rating", "image_choice", "image_comparison"]),
       text: z.string().min(1),
       options: z.array(z.string()).optional(),
       required: z.boolean().default(true),
@@ -35,6 +35,17 @@ const CreateStudySchema = z.object({
       step: z.number().min(1).optional(),
       leftLabel: z.string().max(100).optional(),
       rightLabel: z.string().max(100).optional(),
+      // Image question fields
+      imageUrl: z.string().max(500).optional(),
+      imageUrls: z.array(z.string().max(500)).max(4).optional(),
+      imageLabels: z.array(z.string().max(100)).max(4).optional(),
+      imagePrompt: z.string().max(1000).optional(),
+      imageScaleMin: z.number().min(0).max(10).optional(),
+      imageScaleMax: z.number().min(1).max(10).optional(),
+      imageScaleLabels: z.object({
+        low: z.string().max(50),
+        high: z.string().max(50),
+      }).optional(),
       // Conditional logic
       showIf: QuestionConditionSchema.optional(),
     })

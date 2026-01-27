@@ -7,6 +7,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import { urlToBase64 } from "./storage";
 
 // Types
 export interface SyntheticPersona {
@@ -43,7 +44,7 @@ export interface QuestionCondition {
 // Base survey question interface
 export interface SurveyQuestion {
   id: string;
-  type: "likert" | "nps" | "multiple_choice" | "ranking" | "open_ended" | "matrix" | "slider";
+  type: "likert" | "nps" | "multiple_choice" | "ranking" | "open_ended" | "matrix" | "slider" | "image_rating" | "image_choice" | "image_comparison";
   text: string;
   options?: string[];
   scaleMin?: number;
@@ -64,6 +65,14 @@ export interface SurveyQuestion {
   step?: number;           // Step increment (e.g., 1)
   leftLabel?: string;      // Label for left/min end
   rightLabel?: string;     // Label for right/max end
+  // Image question specific fields
+  imageUrl?: string;       // Single image URL (for image_rating, image_choice)
+  imageUrls?: string[];    // Multiple image URLs (for image_comparison)
+  imageLabels?: string[];  // Labels for each image in comparison
+  imagePrompt?: string;    // Custom evaluation prompt
+  imageScaleMin?: number;  // Rating scale minimum (for image_rating)
+  imageScaleMax?: number;  // Rating scale maximum (for image_rating)
+  imageScaleLabels?: { low: string; high: string }; // Scale labels
 }
 
 // Matrix question response
@@ -107,6 +116,10 @@ export interface SSRResponse {
   itemRatings?: Record<string, number>;
   itemExplanations?: Record<string, string>;
   avgRating?: number;
+  // Image question specific fields
+  visualAnalysis?: string;        // Description of what persona sees in image
+  imagePreferences?: Record<string, number>; // Preference scores for comparison
+  selectedImage?: string;         // Selected image label for comparison
   // Conditional logic - whether this question was skipped
   skipped?: boolean;
   skipReason?: string;
@@ -567,6 +580,11 @@ Pick the option that fits you best and briefly explain why. Start your response 
       return this.generateSliderResponse(persona, question, productContext);
     }
 
+    // For image questions - use Claude Vision
+    if (question.type === "image_rating" || question.type === "image_choice" || question.type === "image_comparison") {
+      return this.generateImageResponse(persona, question, productContext);
+    }
+
     // For Likert/NPS scales, use SSR methodology
     const textResponse = await this.generateTextResponse(persona, question, productContext);
     const { rating, distribution, confidence } = await this.mapToLikert(
@@ -797,6 +815,279 @@ Respond ONLY as JSON:
     // Normalize
     const sum = distribution.reduce((a, b) => a + b, 0);
     return distribution.map(d => Math.round((d / sum) * 100));
+  }
+
+  /**
+   * Generate response for image-based questions using Claude Vision
+   */
+  private async generateImageResponse(
+    persona: SyntheticPersona,
+    question: SurveyQuestion,
+    productContext?: ProductContext
+  ): Promise<SSRResponse> {
+    const personaPrompt = this.buildPersonaPrompt(persona, productContext);
+    const style = this.getPersonalityStyle(persona.psychographics.personality);
+
+    try {
+      // Prepare image content for the API
+      const imageContent = await this.prepareImageContent(question);
+
+      if (imageContent.length === 0) {
+        // No valid images, return fallback
+        return this.createFallbackImageResponse(question);
+      }
+
+      // Build the evaluation prompt based on question type
+      const evaluationPrompt = this.buildImageEvaluationPrompt(question, style);
+
+      // Call Claude Vision API
+      const response = await this.callWithRetry(async () => {
+        return this.anthropic.messages.create({
+          model: "claude-sonnet-4-20250514", // Vision-capable model
+          max_tokens: 800,
+          system: personaPrompt,
+          messages: [
+            {
+              role: "user",
+              content: [
+                ...imageContent,
+                { type: "text", text: evaluationPrompt },
+              ],
+            },
+          ],
+        });
+      });
+
+      const textBlock = response.content.find((block) => block.type === "text");
+      const text = textBlock?.type === "text" ? textBlock.text : "";
+
+      // Parse the response based on question type
+      return this.parseImageResponse(question, text);
+    } catch (error) {
+      console.error("Error generating image response:", error);
+      return this.createFallbackImageResponse(question);
+    }
+  }
+
+  /**
+   * Prepare image content for Claude Vision API
+   */
+  private async prepareImageContent(
+    question: SurveyQuestion
+  ): Promise<Array<{ type: "image"; source: { type: "base64"; media_type: "image/jpeg" | "image/png" | "image/gif" | "image/webp"; data: string } }>> {
+    const imageContent: Array<{ type: "image"; source: { type: "base64"; media_type: "image/jpeg" | "image/png" | "image/gif" | "image/webp"; data: string } }> = [];
+
+    if (question.type === "image_rating" || question.type === "image_choice") {
+      if (question.imageUrl) {
+        try {
+          const { data, mediaType } = await urlToBase64(question.imageUrl);
+          imageContent.push({
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: mediaType,
+              data,
+            },
+          });
+        } catch (error) {
+          console.error("Failed to load image:", question.imageUrl, error);
+        }
+      }
+    } else if (question.type === "image_comparison" && question.imageUrls) {
+      for (const url of question.imageUrls) {
+        try {
+          const { data, mediaType } = await urlToBase64(url);
+          imageContent.push({
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: mediaType,
+              data,
+            },
+          });
+        } catch (error) {
+          console.error("Failed to load image:", url, error);
+        }
+      }
+    }
+
+    return imageContent;
+  }
+
+  /**
+   * Build evaluation prompt for image questions
+   */
+  private buildImageEvaluationPrompt(
+    question: SurveyQuestion,
+    style: { tone: string; length: string }
+  ): string {
+    const customPrompt = question.imagePrompt || "";
+
+    if (question.type === "image_rating") {
+      const scaleMin = question.imageScaleMin || 1;
+      const scaleMax = question.imageScaleMax || 5;
+      const lowLabel = question.imageScaleLabels?.low || "Very Poor";
+      const highLabel = question.imageScaleLabels?.high || "Excellent";
+
+      return `Question: "${question.text}"
+
+${customPrompt ? `Additional context: ${customPrompt}\n` : ""}
+Look at this image and provide your evaluation.
+
+Rate the image from ${scaleMin} (${lowLabel}) to ${scaleMax} (${highLabel}).
+
+Respond in ${style.length}. Be ${style.tone}.
+
+Respond ONLY as JSON in this exact format:
+{
+  "rating": <number ${scaleMin}-${scaleMax}>,
+  "visualAnalysis": "<brief description of what you see and your impression>",
+  "explanation": "<why you gave this rating>",
+  "confidence": <0.0-1.0>
+}`;
+    }
+
+    if (question.type === "image_choice") {
+      const options = question.options || [];
+      return `Question: "${question.text}"
+
+${customPrompt ? `Additional context: ${customPrompt}\n` : ""}
+Look at this image and answer the question.
+
+Options:
+${options.map((o, i) => `${i + 1}. ${o}`).join("\n")}
+
+Respond in ${style.length}. Be ${style.tone}.
+
+Respond ONLY as JSON in this exact format:
+{
+  "rating": <option number 1-${options.length}>,
+  "visualAnalysis": "<brief description of what you see>",
+  "explanation": "<why you chose this option>",
+  "confidence": <0.0-1.0>
+}`;
+    }
+
+    if (question.type === "image_comparison") {
+      const labels = question.imageLabels || question.imageUrls?.map((_, i) => `Image ${i + 1}`) || [];
+      return `Question: "${question.text}"
+
+${customPrompt ? `Additional context: ${customPrompt}\n` : ""}
+Compare the ${labels.length} images shown above.
+
+The images are labeled (in order):
+${labels.map((label, i) => `${i + 1}. ${label}`).join("\n")}
+
+Respond in ${style.length}. Be ${style.tone}.
+
+Respond ONLY as JSON in this exact format:
+{
+  "selectedImage": "<the label of your preferred image>",
+  "imagePreferences": {${labels.map(label => `"${label}": <score 1-10>`).join(", ")}},
+  "visualAnalysis": "<brief comparison of the images>",
+  "explanation": "<why you prefer your selected image>",
+  "confidence": <0.0-1.0>
+}`;
+    }
+
+    // Fallback
+    return `Evaluate this image and provide your thoughts. Respond naturally.`;
+  }
+
+  /**
+   * Parse image response from Claude
+   */
+  private parseImageResponse(
+    question: SurveyQuestion,
+    text: string
+  ): SSRResponse {
+    try {
+      // Try to extract JSON from the response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+
+        if (question.type === "image_rating") {
+          const scaleMin = question.imageScaleMin || 1;
+          const scaleMax = question.imageScaleMax || 5;
+          const rating = Math.min(Math.max(Number(parsed.rating) || 3, scaleMin), scaleMax);
+          const confidence = Math.min(Math.max(parsed.confidence || 0.7, 0), 1);
+
+          return {
+            questionId: question.id,
+            rating,
+            explanation: parsed.explanation || text,
+            confidence,
+            rawTextResponse: text,
+            visualAnalysis: parsed.visualAnalysis || "",
+            distribution: this.generateDistribution(rating, scaleMin, scaleMax, confidence),
+          };
+        }
+
+        if (question.type === "image_choice") {
+          const rating = Math.min(Math.max(Number(parsed.rating) || 1, 1), question.options?.length || 4);
+
+          return {
+            questionId: question.id,
+            rating,
+            explanation: parsed.explanation || text,
+            confidence: parsed.confidence || 0.8,
+            rawTextResponse: text,
+            visualAnalysis: parsed.visualAnalysis || "",
+          };
+        }
+
+        if (question.type === "image_comparison") {
+          // For comparison, rating is the index of selected image
+          const labels = question.imageLabels || [];
+          const selectedIndex = labels.indexOf(parsed.selectedImage) + 1;
+          const rating = selectedIndex > 0 ? selectedIndex : 1;
+
+          return {
+            questionId: question.id,
+            rating,
+            explanation: parsed.explanation || text,
+            confidence: parsed.confidence || 0.8,
+            rawTextResponse: text,
+            visualAnalysis: parsed.visualAnalysis || "",
+            selectedImage: parsed.selectedImage || labels[0] || "Image 1",
+            imagePreferences: parsed.imagePreferences || {},
+          };
+        }
+      }
+    } catch (error) {
+      console.error("Error parsing image response:", error);
+    }
+
+    // Fallback parsing
+    return this.createFallbackImageResponse(question, text);
+  }
+
+  /**
+   * Create fallback response for image questions
+   */
+  private createFallbackImageResponse(
+    question: SurveyQuestion,
+    rawText: string = ""
+  ): SSRResponse {
+    const scaleMin = question.imageScaleMin || 1;
+    const scaleMax = question.imageScaleMax || 5;
+    const midRating = Math.round((scaleMin + scaleMax) / 2);
+
+    return {
+      questionId: question.id,
+      rating: question.type === "image_comparison" ? 1 : midRating,
+      explanation: rawText || "Unable to evaluate image",
+      confidence: 0.5,
+      rawTextResponse: rawText,
+      visualAnalysis: "",
+      distribution: question.type === "image_rating"
+        ? this.generateDistribution(midRating, scaleMin, scaleMax, 0.5)
+        : undefined,
+      selectedImage: question.type === "image_comparison"
+        ? (question.imageLabels?.[0] || "Image 1")
+        : undefined,
+    };
   }
 
   /**

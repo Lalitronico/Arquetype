@@ -19,6 +19,7 @@ import {
   ThumbsDown,
   Minus,
   Hash,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -68,6 +69,14 @@ interface StudyData {
     max?: number;
     leftLabel?: string;
     rightLabel?: string;
+    // Image question fields
+    imageUrl?: string;
+    imageUrls?: string[];
+    imageLabels?: string[];
+    imagePrompt?: string;
+    imageScaleMin?: number;
+    imageScaleMax?: number;
+    imageScaleLabels?: { low: string; high: string };
     // Conditional logic
     showIf?: {
       questionId: string;
@@ -108,6 +117,10 @@ interface StudyData {
       itemRatings?: Record<string, number> | null;
       itemExplanations?: Record<string, string> | null;
       avgRating?: number | null;
+      // Image question fields
+      visualAnalysis?: string | null;
+      imagePreferences?: Record<string, number> | null;
+      selectedImage?: string | null;
       // Conditional logic
       skipped?: boolean;
       skipReason?: string | null;
@@ -160,6 +173,15 @@ interface QuestionStat {
   histogramBuckets?: number[];
   percentile25?: number;
   percentile75?: number;
+  // Image question specific
+  imageUrl?: string;
+  imageUrls?: string[];
+  imageLabels?: string[];
+  imageScaleMin?: number;
+  imageScaleMax?: number;
+  imageScaleLabels?: { low: string; high: string };
+  imagePreferenceStats?: Record<string, { avgScore: number; selectCount: number }>;
+  sampleVisualAnalysis?: string[];
   // Conditional logic
   skippedCount?: number;
   skipRate?: number;
@@ -894,6 +916,44 @@ export default function StudyResultsPage({
     // Extract top keywords for open-ended questions
     const topKeywords = normalizedType === "open_ended" ? extractTopKeywords(textResponses, 5) : [];
 
+    // Image question specific: calculate preference stats for comparison
+    let imagePreferenceStats: Record<string, { avgScore: number; selectCount: number }> | undefined;
+    let sampleVisualAnalysis: string[] | undefined;
+
+    if (normalizedType === "image_comparison" && question.imageLabels) {
+      imagePreferenceStats = {};
+      for (const label of question.imageLabels) {
+        const scores: number[] = [];
+        let selectCount = 0;
+
+        nonSkippedResponses.forEach((r) => {
+          if (r.imagePreferences && typeof r.imagePreferences === "object") {
+            const score = (r.imagePreferences as Record<string, number>)[label];
+            if (typeof score === "number") {
+              scores.push(score);
+            }
+          }
+          if (r.selectedImage === label) {
+            selectCount++;
+          }
+        });
+
+        imagePreferenceStats[label] = {
+          avgScore: scores.length > 0
+            ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
+            : 0,
+          selectCount,
+        };
+      }
+    }
+
+    if (normalizedType === "image_rating" || normalizedType === "image_comparison") {
+      sampleVisualAnalysis = nonSkippedResponses
+        .map((r) => r.visualAnalysis)
+        .filter((v): v is string => v !== null && v !== undefined && v.length > 0)
+        .slice(0, 3);
+    }
+
     return {
       ...question,
       type: normalizedType, // Use normalized type
@@ -913,6 +973,9 @@ export default function StudyResultsPage({
       histogramBuckets: normalizedType === "slider" ? distributionPercent : undefined,
       percentile25: normalizedType === "slider" ? percentile25 : undefined,
       percentile75: normalizedType === "slider" ? percentile75 : undefined,
+      // Image question specific
+      imagePreferenceStats,
+      sampleVisualAnalysis,
       // Conditional logic
       skippedCount,
       skipRate,
@@ -1113,6 +1176,12 @@ export default function StudyResultsPage({
                       ? `Matrix (${question.items?.length || 0} items)`
                       : question.type === "slider"
                       ? `Slider (${question.min ?? 0}-${question.max ?? 100})`
+                      : question.type === "image_rating"
+                      ? `Image Rating (${question.imageScaleMin ?? 1}-${question.imageScaleMax ?? 5})`
+                      : question.type === "image_choice"
+                      ? "Image + Options"
+                      : question.type === "image_comparison"
+                      ? `Image Comparison (${question.imageUrls?.length || 0} images)`
                       : "5-point Likert Scale"}
                     {question.hasCondition && (
                       <span className="ml-2 text-amber-600">(Conditional)</span>
@@ -1425,6 +1494,203 @@ export default function StudyResultsPage({
                           <div className="text-xs text-gray-500">75th %ile</div>
                         </div>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Image Rating Question */}
+                  {question.type === "image_rating" && question.imageUrl && (
+                    <div className="space-y-4">
+                      {/* Image Display */}
+                      <div className="flex justify-center">
+                        <img
+                          src={question.imageUrl}
+                          alt="Survey image"
+                          className="max-w-xs max-h-48 rounded-lg border object-cover"
+                        />
+                      </div>
+
+                      {/* Rating Distribution */}
+                      <div className="space-y-2">
+                        {question.distribution.map((pct, i) => {
+                          const scaleMin = question.imageScaleMin ?? 1;
+                          return (
+                            <div key={i} className="flex items-center gap-3">
+                              <span className="w-8 text-sm text-gray-500 text-right">
+                                {scaleMin + i}
+                              </span>
+                              <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-purple-500 rounded-full transition-all"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <span className="w-12 text-sm font-medium text-right">
+                                {pct}%
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Scale Labels */}
+                      {question.imageScaleLabels && (
+                        <div className="flex justify-between text-xs text-gray-500 px-10">
+                          <span>{question.imageScaleLabels.low}</span>
+                          <span>{question.imageScaleLabels.high}</span>
+                        </div>
+                      )}
+
+                      {/* Summary Stats */}
+                      <div className="flex gap-6 pt-4 border-t">
+                        <div>
+                          <div className="text-2xl font-bold text-purple-600">
+                            {question.mean}
+                          </div>
+                          <div className="text-xs text-gray-500">Mean</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-purple-600">
+                            {question.median}
+                          </div>
+                          <div className="text-xs text-gray-500">Median</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-purple-600">
+                            {question.stdDev}
+                          </div>
+                          <div className="text-xs text-gray-500">Std Dev</div>
+                        </div>
+                      </div>
+
+                      {/* Sample Visual Analysis */}
+                      {question.sampleVisualAnalysis && question.sampleVisualAnalysis.length > 0 && (
+                        <div className="pt-4 border-t">
+                          <div className="text-xs text-gray-500 mb-2">Sample Feedback</div>
+                          <p className="text-sm text-gray-600 italic bg-gray-50 p-2 rounded">
+                            &ldquo;{question.sampleVisualAnalysis[0]}&rdquo;
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Image Choice Question */}
+                  {question.type === "image_choice" && question.imageUrl && (
+                    <div className="space-y-4">
+                      {/* Image Display */}
+                      <div className="flex justify-center">
+                        <img
+                          src={question.imageUrl}
+                          alt="Survey image"
+                          className="max-w-xs max-h-48 rounded-lg border object-cover"
+                        />
+                      </div>
+
+                      {/* Choice Distribution */}
+                      <div className="space-y-2">
+                        {question.options && question.options.length > 0 ? (
+                          question.options.map((option, i) => {
+                            const optionCount = question.distribution[i] || 0;
+                            return (
+                              <div key={i} className="flex items-center gap-3">
+                                <span className="flex-shrink-0 w-48 text-sm text-gray-700 truncate" title={option}>
+                                  {option}
+                                </span>
+                                <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-purple-500 rounded-full transition-all"
+                                    style={{ width: `${optionCount}%` }}
+                                  />
+                                </div>
+                                <span className="w-12 text-sm font-medium text-right">
+                                  {optionCount}%
+                                </span>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          question.distribution.map((pct, i) => (
+                            <div key={i} className="flex items-center gap-3">
+                              <span className="w-24 text-sm text-gray-500 text-right">
+                                Option {i + 1}
+                              </span>
+                              <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-purple-500 rounded-full transition-all"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <span className="w-12 text-sm font-medium text-right">
+                                {pct}%
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      <div className="pt-2 border-t text-xs text-gray-500">
+                        {question.totalResponses} responses collected
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Image Comparison Question */}
+                  {question.type === "image_comparison" && question.imageUrls && question.imageUrls.length > 0 && (
+                    <div className="space-y-4">
+                      {/* Images Grid with Preference Stats */}
+                      <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${Math.min(question.imageUrls.length, 4)}, 1fr)` }}>
+                        {question.imageUrls.map((url, index) => {
+                          const label = question.imageLabels?.[index] || `Image ${index + 1}`;
+                          const stats = question.imagePreferenceStats?.[label];
+                          const selectPct = question.totalResponses > 0 && stats
+                            ? Math.round((stats.selectCount / question.totalResponses) * 100)
+                            : 0;
+
+                          return (
+                            <div key={index} className="text-center">
+                              <div className="relative">
+                                <img
+                                  src={url}
+                                  alt={label}
+                                  className="w-full max-h-32 rounded-lg border object-cover mx-auto"
+                                />
+                                {/* Selection percentage badge */}
+                                <div className={`absolute -top-2 -right-2 px-2 py-1 rounded-full text-xs font-bold ${
+                                  selectPct >= 40 ? "bg-green-500 text-white" :
+                                  selectPct >= 20 ? "bg-blue-500 text-white" :
+                                  "bg-gray-200 text-gray-700"
+                                }`}>
+                                  {selectPct}%
+                                </div>
+                              </div>
+                              <div className="mt-2 text-sm font-medium text-gray-700">
+                                {label}
+                              </div>
+                              {stats && (
+                                <div className="text-xs text-gray-500">
+                                  Avg score: {stats.avgScore}/10
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Summary */}
+                      <div className="pt-4 border-t">
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium">{question.totalResponses}</span> respondents compared these images
+                        </div>
+                      </div>
+
+                      {/* Sample Visual Analysis */}
+                      {question.sampleVisualAnalysis && question.sampleVisualAnalysis.length > 0 && (
+                        <div className="pt-4 border-t">
+                          <div className="text-xs text-gray-500 mb-2">Sample Comparison Feedback</div>
+                          <p className="text-sm text-gray-600 italic bg-gray-50 p-2 rounded">
+                            &ldquo;{question.sampleVisualAnalysis[0]}&rdquo;
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 
