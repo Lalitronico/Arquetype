@@ -148,6 +148,80 @@ const NPS_ANCHORS = Array.from({ length: 11 }, (_, i) => {
   return `I would definitely recommend this enthusiastically. Rating: ${i}/10. Excellent experience.`;
 });
 
+// Personality-based communication styles for natural response variation
+const PERSONALITY_STYLES: Record<string, {
+  tone: string;
+  length: string;
+  examplePhrases: string[];
+}> = {
+  "Analytical and detail-oriented": {
+    tone: "logical, precise, and thorough",
+    length: "2-3 sentences with specific details",
+    examplePhrases: ["The main factor here is...", "Specifically, I noticed that...", "Comparing the options..."]
+  },
+  "Creative and imaginative": {
+    tone: "expressive, colorful, and original",
+    length: "2-3 sentences",
+    examplePhrases: ["What really stands out is...", "It's refreshing to see...", "This feels like..."]
+  },
+  "Practical and grounded": {
+    tone: "direct, no-nonsense, and utilitarian",
+    length: "1-2 short sentences",
+    examplePhrases: ["Works well.", "Gets the job done.", "Good value for money."]
+  },
+  "Outgoing and energetic": {
+    tone: "enthusiastic, warm, and engaging",
+    length: "2-3 sentences",
+    examplePhrases: ["I love how...", "My friends and I always...", "This is exactly what..."]
+  },
+  "Reserved and thoughtful": {
+    tone: "measured, reflective, and considered",
+    length: "1-2 sentences",
+    examplePhrases: ["In my experience...", "I tend to prefer...", "After some thought..."]
+  },
+  "Optimistic and enthusiastic": {
+    tone: "positive, hopeful, and appreciative",
+    length: "2-3 sentences",
+    examplePhrases: ["I really appreciate...", "The great thing is...", "It's wonderful that..."]
+  },
+  "Cautious and risk-averse": {
+    tone: "careful, questioning, and hedged",
+    length: "2-3 sentences",
+    examplePhrases: ["I'm not entirely sure...", "It seems okay, but...", "I'd want to know more about..."]
+  },
+  "Spontaneous and adventurous": {
+    tone: "casual, bold, and open",
+    length: "1-2 sentences",
+    examplePhrases: ["Why not?", "I'd try it.", "Sounds fun to me."]
+  },
+  "Organized and methodical": {
+    tone: "structured, systematic, and clear",
+    length: "2-3 sentences",
+    examplePhrases: ["First of all...", "The key points are...", "To summarize..."]
+  },
+  "Flexible and adaptable": {
+    tone: "balanced, open-minded, and moderate",
+    length: "2-3 sentences",
+    examplePhrases: ["It depends on...", "I can see both sides...", "Generally speaking..."]
+  },
+  "Ambitious and driven": {
+    tone: "confident, goal-focused, and decisive",
+    length: "2-3 sentences",
+    examplePhrases: ["What matters most is...", "The bottom line is...", "I look for..."]
+  },
+  "Relaxed and easy-going": {
+    tone: "laid-back, casual, and unbothered",
+    length: "1-2 short sentences",
+    examplePhrases: ["It's fine.", "No complaints.", "Works for me."]
+  }
+};
+
+const DEFAULT_STYLE = {
+  tone: "natural and conversational",
+  length: "1-3 sentences",
+  examplePhrases: [] as string[]
+};
+
 export class SSREngine {
   private anthropic: Anthropic;
   private requestCount: number = 0;
@@ -190,6 +264,13 @@ export class SSREngine {
    */
   private delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Get communication style based on personality type
+   */
+  private getPersonalityStyle(personality: string): typeof DEFAULT_STYLE {
+    return PERSONALITY_STYLES[personality] || DEFAULT_STYLE;
   }
 
   /**
@@ -267,14 +348,25 @@ ${context.brandAffinity?.length ? `- Brand preferences: ${context.brandAffinity.
       }
     }
 
+    // Get personality-specific style
+    const style = this.getPersonalityStyle(psychographics.personality);
+
     prompt += `\n\nRESPONSE GUIDELINES:
-- Respond naturally as this person would actually speak in a real survey
-- NEVER start responses with "As a [age]-year-old..." or mention your demographics
-- Your demographic info is context for HOW you think, not something to repeat
-- Be conversational and authentic, not robotic or formulaic
-- Vary your communication style based on personality (casual vs formal, brief vs detailed)
-- Express genuine opinions with natural human expressions
-- It's okay to be uncertain, have mixed feelings, or give nuanced answers`;
+Your communication style is ${style.tone}. Keep responses ${style.length}.
+
+CRITICAL - DO NOT:
+- Start with "As a [age]-year-old..." or "Being a [occupation]..."
+- Mention your age, gender, income, or location in responses
+- Use the phrase "As someone who..."
+- Give generic responses like "I think it's good/bad"
+- Repeat information from your profile - it's context, not content
+
+DO:
+- Answer directly as if someone asked you in casual conversation
+- Use specific details from your actual experience/perspective
+- Show your personality through word choice and tone, not self-description
+- It's fine to be brief, uncertain, or have mixed feelings
+${style.examplePhrases.length > 0 ? `- Example phrases that fit your style: "${style.examplePhrases.join('", "')}"` : ''}`;
 
     // Add custom context instructions if provided
     if (productContext?.customContextInstructions) {
@@ -293,6 +385,7 @@ ${context.brandAffinity?.length ? `- Brand preferences: ${context.brandAffinity.
     productContext?: ProductContext
   ): Promise<string> {
     const personaPrompt = this.buildPersonaPrompt(persona, productContext);
+    const style = this.getPersonalityStyle(persona.psychographics.personality);
 
     const response = await this.callWithRetry(async () => {
       return this.anthropic.messages.create({
@@ -304,7 +397,7 @@ ${context.brandAffinity?.length ? `- Brand preferences: ${context.brandAffinity.
             role: "user",
             content: `Survey question: "${question.text}"
 
-Answer naturally in 2-3 sentences. Share your honest opinion without repeating who you are.`,
+Respond in ${style.length}. Be ${style.tone}. Answer as you would in real life - no need to explain who you are.`,
           },
         ],
       });

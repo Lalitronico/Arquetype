@@ -120,6 +120,7 @@ const PRODUCT_CATEGORIES = [
   "Marketplace",
   "Financial Product",
   "Health & Wellness",
+  "Food & Beverage",
   "Other",
 ];
 

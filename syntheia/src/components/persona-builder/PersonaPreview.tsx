@@ -130,6 +130,13 @@ export function PersonaPreview({ config, count = 3 }: PersonaPreviewProps) {
               </div>
 
               <div className="pt-2 border-t">
+                <div className="text-[10px] text-gray-500 mb-1">Personality</div>
+                <div className="text-xs font-medium truncate">
+                  {persona.psychographics.personality}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t">
                 <div className="text-[10px] text-gray-500 mb-1">Lifestyle</div>
                 <div className="text-xs font-medium truncate">
                   {persona.psychographics.lifestyle}
