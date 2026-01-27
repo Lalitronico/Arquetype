@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revokeApiKey, getOrganizationForUser } from "@/lib/api-keys";
+import { logActivity } from "@/lib/activity-logger";
 
 // DELETE /api/api-keys/[id] - Revoke an API key
 export async function DELETE(
@@ -25,6 +26,15 @@ export async function DELETE(
     }
 
     await revokeApiKey(id, organizationId);
+
+    // Log activity
+    await logActivity({
+      organizationId,
+      userId: session.user.id,
+      action: "api_key_revoked",
+      resourceType: "api_key",
+      resourceId: id,
+    });
 
     return NextResponse.json({ message: "API key revoked" });
   } catch (error) {

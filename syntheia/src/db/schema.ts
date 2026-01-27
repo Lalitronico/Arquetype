@@ -200,3 +200,59 @@ export const panelConfigs = sqliteTable("panel_configs", {
 
 export type PanelConfig = typeof panelConfigs.$inferSelect;
 export type NewPanelConfig = typeof panelConfigs.$inferInsert;
+
+// Team invitations
+export const invitations = sqliteTable("invitations", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  role: text("role").notNull().default("member"), // admin, member
+  invitedBy: text("invited_by")
+    .notNull()
+    .references(() => users.id),
+  token: text("token").notNull().unique(),
+  status: text("status").notNull().default("pending"), // pending, accepted, declined, revoked
+  expiresAt: text("expires_at").notNull(),
+  createdAt: text("created_at").notNull().default(new Date().toISOString()),
+  acceptedAt: text("accepted_at"),
+});
+
+export type Invitation = typeof invitations.$inferSelect;
+export type NewInvitation = typeof invitations.$inferInsert;
+
+// Study comments for collaboration
+export const studyComments = sqliteTable("study_comments", {
+  id: text("id").primaryKey(),
+  studyId: text("study_id")
+    .notNull()
+    .references(() => studies.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  parentId: text("parent_id"), // For threaded replies
+  content: text("content").notNull(),
+  createdAt: text("created_at").notNull().default(new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().default(new Date().toISOString()),
+});
+
+export type StudyComment = typeof studyComments.$inferSelect;
+export type NewStudyComment = typeof studyComments.$inferInsert;
+
+// Activity logs for audit trail
+export const activityLogs = sqliteTable("activity_logs", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  action: text("action").notNull(), // invitation_sent, member_joined, role_changed, study_created, comment_added, etc.
+  resourceType: text("resource_type").notNull(), // organization, member, study, invitation, comment
+  resourceId: text("resource_id"),
+  metadata: text("metadata"), // JSON string for additional data
+  createdAt: text("created_at").notNull().default(new Date().toISOString()),
+});
+
+export type ActivityLog = typeof activityLogs.$inferSelect;
+export type NewActivityLog = typeof activityLogs.$inferInsert;

@@ -5,6 +5,7 @@ import { studies, organizationMembers } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { logStudyCreated } from "@/lib/activity-logger";
 
 // Condition schema for conditional logic
 const QuestionConditionSchema = z.object({
@@ -230,6 +231,9 @@ export async function POST(request: NextRequest) {
       .select()
       .from(studies)
       .where(eq(studies.id, studyId));
+
+    // Log activity
+    await logStudyCreated(organizationId, session.user.id, studyId, validatedData.name);
 
     return NextResponse.json(
       {

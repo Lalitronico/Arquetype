@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   FileText,
   Users,
+  Users2,
   BarChart3,
   Settings,
   CreditCard,
@@ -16,6 +17,7 @@ import {
   X,
   Loader2,
   Key,
+  Activity,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -40,7 +42,9 @@ const navigation = [
 
 const secondaryNav = [
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
+  { name: "Team", href: "/dashboard/settings/team", icon: Users2 },
   { name: "API Keys", href: "/dashboard/settings/api", icon: Key },
+  { name: "Activity", href: "/dashboard/settings/activity", icon: Activity },
   { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
 ];
 

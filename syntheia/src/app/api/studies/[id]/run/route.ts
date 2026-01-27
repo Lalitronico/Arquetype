@@ -12,6 +12,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getSSREngine, SurveyQuestion, ProductContext } from "@/lib/ssr-engine";
 import { generatePanel, PERSONA_PRESETS, PresetName } from "@/lib/persona-generator";
+import { logStudyStarted, logActivity } from "@/lib/activity-logger";
 
 async function getSession() {
   const headersList = await headers();
@@ -113,6 +114,9 @@ export async function POST(
         updatedAt: simulationStartTime,
       })
       .where(eq(studies.id, studyId));
+
+    // Log activity
+    await logStudyStarted(organizationId, session.user.id, studyId, study.name);
 
     // Parse study data
     const questions = JSON.parse(study.questions) as Array<{
@@ -253,6 +257,16 @@ export async function POST(
         updatedAt: now,
       })
       .where(eq(organizations.id, organizationId));
+
+    // Log completion
+    await logActivity({
+      organizationId,
+      userId: session.user.id,
+      action: "study_completed",
+      resourceType: "study",
+      resourceId: studyId,
+      metadata: { studyName: study.name, respondents: panel.length, creditsUsed: creditsNeeded },
+    });
 
     // Aggregate results for response
     const aggregatedResults = aggregateResults(simulationResults, surveyQuestions);

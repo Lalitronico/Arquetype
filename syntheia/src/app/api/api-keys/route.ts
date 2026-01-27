@@ -6,6 +6,7 @@ import {
   createApiKey,
   getOrganizationForUser,
 } from "@/lib/api-keys";
+import { logActivity } from "@/lib/activity-logger";
 
 // GET /api/api-keys - List all API keys for the organization
 export async function GET(request: NextRequest) {
@@ -67,6 +68,16 @@ export async function POST(request: NextRequest) {
       scopes || ["read", "write"],
       expiresAt
     );
+
+    // Log activity
+    await logActivity({
+      organizationId,
+      userId: session.user.id,
+      action: "api_key_created",
+      resourceType: "api_key",
+      resourceId: result.id,
+      metadata: { keyName: name.trim() },
+    });
 
     return NextResponse.json({
       id: result.id,
