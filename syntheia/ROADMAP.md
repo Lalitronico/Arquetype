@@ -80,10 +80,10 @@
 - [x] Conditional logic / branching
 
 #### Collaboration Features
-- [ ] Team member invitations
-- [ ] Role-based permissions
-- [ ] Study sharing and commenting
-- [ ] Activity log
+- [x] Team member invitations
+- [x] Role-based permissions
+- [x] Study sharing and commenting
+- [x] Activity log
 
 ### Low Priority
 
