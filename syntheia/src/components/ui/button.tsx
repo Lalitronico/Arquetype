@@ -13,13 +13,20 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline:
-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+          "border border-gray-300 bg-transparent text-gray-700 shadow-sm hover:bg-gray-50 hover:border-[#C8A2C8]",
         secondary:
           "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+        ghost: "hover:bg-gray-100 hover:text-gray-900 text-gray-600",
+        "ghost-dark": "hover:bg-[#C8A2C8]/10 hover:text-white text-[#a0a0b0]",
+        "outline-dark":
+          "border border-[#C8A2C8]/30 bg-transparent text-white shadow-sm hover:bg-[#C8A2C8]/10 hover:border-[#C8A2C8]/50",
+        link: "text-[#C8A2C8] underline-offset-4 hover:underline",
         gradient:
-          "bg-gradient-to-r from-[#1a365d] to-[#2563eb] text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all",
+          "bg-gradient-to-r from-[#d946ef] via-[#C8A2C8] to-[#a855f7] text-white font-semibold shadow-[0_0_20px_rgba(217,70,239,0.4)] hover:shadow-[0_0_40px_rgba(217,70,239,0.6)] hover:scale-[1.02] transition-all btn-shimmer",
+        "gradient-dark":
+          "bg-gradient-to-r from-[#9b7a9b] via-[#C8A2C8] to-[#9b7a9b] text-white font-semibold shadow-lg hover:shadow-[0_0_30px_rgba(200,162,200,0.3)] hover:scale-[1.02] transition-all btn-shimmer",
+        "outline-light":
+          "border border-white/30 bg-transparent text-white hover:bg-white/10 hover:border-white/50",
       },
       size: {
         default: "h-10 px-4 py-2",
