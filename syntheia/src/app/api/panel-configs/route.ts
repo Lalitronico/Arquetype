@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "@/db";
 import { panelConfigs, organizationMembers } from "@/db/schema";
-import { eq, and, or } from "drizzle-orm";
+import { eq, and, or, like, desc } from "drizzle-orm";
 import { generateId } from "@/lib/utils";
 
 // Helper to get organization for user
@@ -18,7 +18,7 @@ async function getOrganizationForUser(userId: string): Promise<string | null> {
 }
 
 // GET /api/panel-configs - List all panel configs for the organization
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -33,17 +33,41 @@ export async function GET() {
       return NextResponse.json({ error: "No organization found" }, { status: 404 });
     }
 
+    // Get query params
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search");
+    const industry = searchParams.get("industry");
+
+    // Build conditions
+    const conditions = [
+      or(
+        eq(panelConfigs.organizationId, organizationId),
+        eq(panelConfigs.isTemplate, true)
+      ),
+    ];
+
+    // Add industry filter if provided
+    if (industry) {
+      conditions.push(eq(panelConfigs.industry, industry));
+    }
+
     // Get configs for this organization + public templates
-    const configs = await db
+    let configs = await db
       .select()
       .from(panelConfigs)
-      .where(
-        or(
-          eq(panelConfigs.organizationId, organizationId),
-          eq(panelConfigs.isTemplate, true)
-        )
-      )
-      .orderBy(panelConfigs.updatedAt);
+      .where(and(...conditions))
+      .orderBy(desc(panelConfigs.updatedAt));
+
+    // Apply search filter in memory (for name search)
+    if (search) {
+      const searchLower = search.toLowerCase();
+      configs = configs.filter(
+        (config) =>
+          config.name.toLowerCase().includes(searchLower) ||
+          (config.description &&
+            config.description.toLowerCase().includes(searchLower))
+      );
+    }
 
     // Parse the JSON config field
     const parsedConfigs = configs.map((config) => ({
