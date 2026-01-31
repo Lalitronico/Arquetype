@@ -1,14 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Outfit, DM_Sans } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+const outfit = Outfit({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Arquetype - Real insights. Synthetic speed.",
+  title: "Syntheia - Real insights. Synthetic speed.",
   description:
     "Generate synthetic survey respondents using AI. Get market research insights in minutes, not weeks. Trusted by 500+ research teams.",
   keywords: [
@@ -17,11 +24,12 @@ export const metadata: Metadata = {
     "AI survey",
     "consumer insights",
     "synthetic panelists",
-    "Arquetype",
+    "Syntheia",
+    "SSR methodology",
   ],
-  authors: [{ name: "Arquetype" }],
+  authors: [{ name: "Syntheia" }],
   openGraph: {
-    title: "Arquetype - Real insights. Synthetic speed.",
+    title: "Syntheia - Real insights. Synthetic speed.",
     description:
       "Generate synthetic survey respondents using AI. Get market research insights in minutes, not weeks.",
     type: "website",
@@ -29,7 +37,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Arquetype - Real insights. Synthetic speed.",
+    title: "Syntheia - Real insights. Synthetic speed.",
     description:
       "Generate synthetic survey respondents using AI. Get market research insights in minutes, not weeks.",
   },
@@ -42,7 +50,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${outfit.variable} ${dmSans.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>

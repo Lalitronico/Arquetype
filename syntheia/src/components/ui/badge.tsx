@@ -7,32 +7,53 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
+        // Default - subtle purple
         default:
-          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+          "border-transparent bg-[#7C3AED]/10 text-[#7C3AED]",
+
+        // Secondary - gray
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "border-transparent bg-[#FAFAFA] text-[#4A4A5A]",
+
+        // Destructive
         destructive:
-          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
+          "border-transparent bg-red-100 text-red-700",
+
+        // Outline
+        outline:
+          "border-[#E5E7EB] text-[#4A4A5A]",
+
+        // Success - green
         success:
-          "border-transparent bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+          "border-transparent bg-emerald-100 text-emerald-700",
+
+        // Warning - yellow
         warning:
-          "border-transparent bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+          "border-transparent bg-amber-100 text-amber-700",
+
+        // Info - purple tint
         info:
-          "border-transparent bg-[#f5eef5] text-[#584458] dark:bg-[#584458]/20 dark:text-[#d4b4d4]",
+          "border-transparent bg-[#7C3AED]/5 text-[#6D28D9]",
+
+        // Primary - solid purple
         primary:
-          "border-transparent bg-[#705670] text-white",
-        // Dark theme specific variants - Enhanced neon
+          "border-transparent bg-[#7C3AED] text-white",
+
+        // Purple outline
+        "purple-outline":
+          "border-[#7C3AED]/30 bg-transparent text-[#7C3AED]",
+
+        // Peer reviewed badge (special for SSR section)
+        "peer-reviewed":
+          "border-[#7C3AED]/20 bg-gradient-to-r from-[#7C3AED]/10 to-[#8B5CF6]/10 text-[#6D28D9] font-medium",
+
+        // For dark backgrounds - light badge
+        "dark-light":
+          "border-white/20 bg-white/10 text-white",
+
+        // For dark backgrounds - accent
         "dark-accent":
-          "border-[#d946ef]/40 bg-[#d946ef]/10 text-[#d4b4d4] shadow-[0_0_15px_rgba(217,70,239,0.2)]",
-        "dark-outline":
-          "border-[#C8A2C8]/40 bg-transparent text-[#C8A2C8]",
-        "dark-glow":
-          "border-[#d946ef]/50 bg-[#d946ef]/15 text-[#d4b4d4] shadow-[0_0_20px_rgba(217,70,239,0.3)]",
-        "dark-success":
-          "border-emerald-500/40 bg-emerald-500/15 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]",
-        "dark-popular":
-          "border-transparent bg-gradient-to-r from-[#d946ef] to-[#a855f7] text-white font-bold shadow-[0_0_15px_rgba(217,70,239,0.4)]",
+          "border-[#7C3AED]/40 bg-[#7C3AED]/20 text-white",
       },
     },
     defaultVariants: {

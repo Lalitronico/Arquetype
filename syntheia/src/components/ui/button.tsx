@@ -8,25 +8,53 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        // Primary purple button
         default:
-          "bg-primary text-primary-foreground shadow hover:bg-primary/90",
+          "bg-[#7C3AED] text-white shadow-md hover:bg-[#6D28D9] focus-visible:ring-[#7C3AED]",
+
+        // Destructive
         destructive:
-          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+          "bg-red-500 text-white shadow-sm hover:bg-red-600",
+
+        // Outline - light theme
         outline:
-          "border border-gray-300 bg-transparent text-gray-700 shadow-sm hover:bg-gray-50 hover:border-[#C8A2C8]",
+          "border border-[#E5E7EB] bg-white text-[#1A1A2E] shadow-sm hover:bg-[#FAFAFA] hover:border-[#7C3AED] hover:text-[#7C3AED]",
+
+        // Secondary
         secondary:
-          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-        ghost: "hover:bg-gray-100 hover:text-gray-900 text-gray-600",
-        "ghost-dark": "hover:bg-[#C8A2C8]/10 hover:text-white text-[#a0a0b0]",
+          "bg-[#FAFAFA] text-[#4A4A5A] shadow-sm hover:bg-[#F8F6F4]",
+
+        // Ghost - light theme
+        ghost:
+          "text-[#4A4A5A] hover:bg-[#FAFAFA] hover:text-[#7C3AED]",
+
+        // Ghost for dark backgrounds
+        "ghost-dark":
+          "text-white/80 hover:bg-white/10 hover:text-white",
+
+        // Outline for dark backgrounds
         "outline-dark":
-          "border border-[#C8A2C8]/30 bg-transparent text-white shadow-sm hover:bg-[#C8A2C8]/10 hover:border-[#C8A2C8]/50",
-        link: "text-[#C8A2C8] underline-offset-4 hover:underline",
+          "border border-white/20 bg-transparent text-white shadow-sm hover:bg-white/10 hover:border-white/40",
+
+        // Link style
+        link:
+          "text-[#7C3AED] underline-offset-4 hover:underline",
+
+        // Primary gradient button - main CTA
         gradient:
-          "bg-gradient-to-r from-[#d946ef] via-[#C8A2C8] to-[#a855f7] text-white font-semibold shadow-[0_0_20px_rgba(217,70,239,0.4)] hover:shadow-[0_0_40px_rgba(217,70,239,0.6)] hover:scale-[1.02] transition-all btn-shimmer",
-        "gradient-dark":
-          "bg-gradient-to-r from-[#9b7a9b] via-[#C8A2C8] to-[#9b7a9b] text-white font-semibold shadow-lg hover:shadow-[0_0_30px_rgba(200,162,200,0.3)] hover:scale-[1.02] transition-all btn-shimmer",
+          "bg-gradient-to-r from-[#7C3AED] via-[#8B5CF6] to-[#6D28D9] text-white font-semibold shadow-lg shadow-[#7C3AED]/25 hover:shadow-xl hover:shadow-[#7C3AED]/30 hover:scale-[1.02] transition-all btn-shimmer",
+
+        // Subtle gradient
+        "gradient-subtle":
+          "bg-gradient-to-r from-[#7C3AED]/10 via-[#8B5CF6]/10 to-[#6D28D9]/10 text-[#7C3AED] font-semibold hover:from-[#7C3AED]/20 hover:via-[#8B5CF6]/20 hover:to-[#6D28D9]/20 transition-all",
+
+        // White button (for dark backgrounds)
+        white:
+          "bg-white text-[#1A1A2E] font-semibold shadow-lg hover:bg-[#FAFAFA] hover:shadow-xl transition-all",
+
+        // Outline light (white outline for dark backgrounds)
         "outline-light":
-          "border border-white/30 bg-transparent text-white hover:bg-white/10 hover:border-white/50",
+          "border-2 border-white/30 bg-transparent text-white hover:bg-white/10 hover:border-white/50",
       },
       size: {
         default: "h-10 px-4 py-2",
