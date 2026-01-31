@@ -60,7 +60,7 @@ function getRoleIcon(role: string) {
     case "owner":
       return <Crown className="h-4 w-4 text-yellow-500" />;
     case "admin":
-      return <Shield className="h-4 w-4 text-blue-500" />;
+      return <Shield className="h-4 w-4 text-[#7C3AED]" />;
     default:
       return <User className="h-4 w-4 text-gray-500" />;
   }
@@ -124,7 +124,7 @@ export function MemberList({
             <div className="flex items-center gap-4">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={member.user.image || ""} />
-                <AvatarFallback className="bg-blue-100 text-blue-700">
+                <AvatarFallback className="bg-[#F3F0FF] text-[#7C3AED]">
                   {getInitials(member.user.name, member.user.email)}
                 </AvatarFallback>
               </Avatar>

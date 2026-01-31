@@ -172,15 +172,15 @@ export function ImageQuestionConfig({ questionType, value, onChange }: ImageQues
         <div
           className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
             isUploading
-              ? "border-blue-300 bg-blue-50"
-              : "border-gray-300 hover:border-blue-400 hover:bg-blue-50/50"
+              ? "border-[#A78BFA] bg-[#F3F0FF]"
+              : "border-gray-300 hover:border-[#A78BFA] hover:bg-[#F3F0FF]/50"
           }`}
           onClick={() => !isUploading && fileInputRef.current?.click()}
         >
           {isUploading ? (
             <div className="flex flex-col items-center gap-2">
-              <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
-              <span className="text-sm text-blue-600">Uploading...</span>
+              <Loader2 className="h-8 w-8 text-[#7C3AED] animate-spin" />
+              <span className="text-sm text-[#7C3AED]">Uploading...</span>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2">
@@ -243,15 +243,15 @@ export function ImageQuestionConfig({ questionType, value, onChange }: ImageQues
           <div
             className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${
               isUploading && uploadingIndex === null
-                ? "border-blue-300 bg-blue-50"
-                : "border-gray-300 hover:border-blue-400 hover:bg-blue-50/50"
+                ? "border-[#A78BFA] bg-[#F3F0FF]"
+                : "border-gray-300 hover:border-[#A78BFA] hover:bg-[#F3F0FF]/50"
             }`}
             onClick={() => !isUploading && multiFileInputRef.current?.click()}
           >
             {isUploading && uploadingIndex === null ? (
               <>
-                <Loader2 className="h-6 w-6 text-blue-500 animate-spin" />
-                <span className="text-sm text-blue-600">Uploading...</span>
+                <Loader2 className="h-6 w-6 text-[#7C3AED] animate-spin" />
+                <span className="text-sm text-[#7C3AED]">Uploading...</span>
               </>
             ) : (
               <>

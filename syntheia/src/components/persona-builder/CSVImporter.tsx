@@ -296,7 +296,7 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
             onClick={() => fileInputRef.current?.click()}
             className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
               isDragging
-                ? "border-blue-500 bg-blue-50"
+                ? "border-[#7C3AED] bg-[#F3F0FF]"
                 : "border-gray-300 hover:border-gray-400"
             }`}
           >
@@ -320,7 +320,7 @@ export function CSVImporter({ onImport }: CSVImporterProps) {
             {/* File Info */}
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-blue-500" />
+                <FileText className="h-5 w-5 text-[#7C3AED]" />
                 <div>
                   <p className="text-sm font-medium">{file.name}</p>
                   <p className="text-xs text-gray-500">

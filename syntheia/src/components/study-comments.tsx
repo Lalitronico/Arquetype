@@ -121,7 +121,7 @@ function CommentItem({
       <div className="flex gap-3">
         <Avatar className="h-8 w-8 flex-shrink-0">
           <AvatarImage src={comment.user.image || ""} />
-          <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">
+          <AvatarFallback className="bg-[#F3F0FF] text-[#7C3AED] text-xs">
             {getInitials(comment.user.name, comment.user.email)}
           </AvatarFallback>
         </Avatar>
@@ -325,7 +325,7 @@ export function StudyComments({ studyId }: StudyCommentsProps) {
         {session?.user && (
           <Avatar className="h-8 w-8 flex-shrink-0">
             <AvatarImage src={session.user.image || ""} />
-            <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">
+            <AvatarFallback className="bg-[#F3F0FF] text-[#7C3AED] text-xs">
               {getInitials(session.user.name || null, session.user.email || "")}
             </AvatarFallback>
           </Avatar>
@@ -362,7 +362,7 @@ export function StudyComments({ studyId }: StudyCommentsProps) {
       {/* Comments list */}
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+          <Loader2 className="h-6 w-6 animate-spin text-[#7C3AED]" />
         </div>
       ) : comments.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">

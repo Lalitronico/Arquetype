@@ -59,7 +59,7 @@ function getInitials(name: string | null, email: string): string {
 function getActionIcon(action: string) {
   switch (action) {
     case "invitation_sent":
-      return <Mail className="h-4 w-4 text-blue-500" />;
+      return <Mail className="h-4 w-4 text-[#7C3AED]" />;
     case "invitation_accepted":
       return <CheckCircle className="h-4 w-4 text-green-500" />;
     case "invitation_revoked":
@@ -69,7 +69,7 @@ function getActionIcon(action: string) {
     case "member_removed":
       return <UserMinus className="h-4 w-4 text-red-500" />;
     case "role_changed":
-      return <Shield className="h-4 w-4 text-blue-500" />;
+      return <Shield className="h-4 w-4 text-[#7C3AED]" />;
     case "study_created":
     case "study_updated":
     case "study_deleted":
@@ -79,7 +79,7 @@ function getActionIcon(action: string) {
       return <Play className="h-4 w-4 text-green-500" />;
     case "comment_added":
     case "comment_deleted":
-      return <MessageSquare className="h-4 w-4 text-blue-500" />;
+      return <MessageSquare className="h-4 w-4 text-[#7C3AED]" />;
     case "api_key_created":
     case "api_key_revoked":
       return <Key className="h-4 w-4 text-yellow-500" />;
@@ -220,7 +220,7 @@ export default function ActivityPage() {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED]" />
             </div>
           ) : logs.length === 0 ? (
             <div className="text-center py-12">
@@ -241,7 +241,7 @@ export default function ActivityPage() {
                     {log.user ? (
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={log.user.image || ""} />
-                        <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">
+                        <AvatarFallback className="bg-[#F3F0FF] text-[#7C3AED] text-xs">
                           {getInitials(log.user.name, log.user.email)}
                         </AvatarFallback>
                       </Avatar>

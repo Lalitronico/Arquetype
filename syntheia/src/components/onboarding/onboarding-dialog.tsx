@@ -28,18 +28,18 @@ interface OnboardingDialogProps {
 
 const steps = [
   {
-    title: "Welcome to Syntheia",
+    title: "Welcome to Arquetype",
     description:
       "Get instant market research insights using AI-powered synthetic respondents. Let's walk through how it works.",
     icon: Sparkles,
     content: (
       <div className="space-y-4 text-center py-4">
-        <div className="flex h-20 w-20 mx-auto items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-emerald-100">
-          <Sparkles className="h-10 w-10 text-blue-600" />
+        <div className="flex h-20 w-20 mx-auto items-center justify-center rounded-full bg-gradient-to-br from-[#F3F0FF] to-emerald-100">
+          <Sparkles className="h-10 w-10 text-[#7C3AED]" />
         </div>
         <div className="text-lg font-medium">Real insights. Synthetic speed.</div>
         <p className="text-gray-600">
-          Syntheia uses our proprietary SSR (Semantic Similarity Rating)
+          Arquetype uses our proprietary SSR (Semantic Similarity Rating)
           methodology to generate statistically valid survey responses that
           match human patterns.
         </p>
@@ -53,8 +53,8 @@ const steps = [
     content: (
       <div className="space-y-4 py-4">
         <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100">
-            <FileText className="h-5 w-5 text-blue-600" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F3F0FF]">
+            <FileText className="h-5 w-5 text-[#7C3AED]" />
           </div>
           <div>
             <div className="font-medium">Question Types Supported</div>
@@ -132,19 +132,19 @@ const steps = [
             <div className="font-medium">How SSR Works</div>
             <ol className="mt-2 space-y-2 text-sm text-gray-600">
               <li className="flex gap-2">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#F3F0FF] text-xs font-bold text-[#7C3AED]">
                   1
                 </span>
                 AI personas generate natural text responses
               </li>
               <li className="flex gap-2">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#F3F0FF] text-xs font-bold text-[#7C3AED]">
                   2
                 </span>
                 Responses mapped to scale anchors via embeddings
               </li>
               <li className="flex gap-2">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#F3F0FF] text-xs font-bold text-[#7C3AED]">
                   3
                 </span>
                 Realistic distributions matching human patterns
@@ -220,8 +220,8 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-              <Icon className="h-5 w-5 text-blue-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#F3F0FF]">
+              <Icon className="h-5 w-5 text-[#7C3AED]" />
             </div>
             <div>
               <DialogTitle>{step.title}</DialogTitle>

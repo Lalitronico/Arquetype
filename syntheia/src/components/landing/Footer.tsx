@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles, Mail, Twitter, Linkedin, Github } from "lucide-react";
+import { Mail, Twitter, Linkedin, Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const footerLinks = {
@@ -31,10 +31,10 @@ export function Footer() {
           {/* Brand column */}
           <div className="col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#6D28D9]">
-                <Sparkles className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-white">Syntheia</span>
+              <div className="w-2 h-2 rounded-full bg-[#7C3AED]" />
+              <span className="text-base font-semibold text-white">
+                Arquetype
+              </span>
             </div>
             <p className="text-sm text-white/50 mb-6 max-w-xs">
               Synthetic survey respondents powered by AI. Get market research insights in minutes, not weeks.
@@ -112,7 +112,7 @@ export function Footer() {
 
         <div className="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="text-sm text-white/40">
-            &copy; {new Date().getFullYear()} Syntheia. All rights reserved.
+            &copy; {new Date().getFullYear()} Arquetype. All rights reserved.
           </div>
           <div className="flex gap-6 text-sm text-white/40">
             <Link href="/privacy" className="hover:text-[#7C3AED] transition-colors">
@@ -127,19 +127,19 @@ export function Footer() {
           </div>
           <div className="flex gap-4">
             <Link
-              href="https://twitter.com/syntheia"
+              href="https://twitter.com/arquetype"
               className="text-white/40 hover:text-[#7C3AED] transition-colors"
             >
               <Twitter className="h-5 w-5" />
             </Link>
             <Link
-              href="https://linkedin.com/company/syntheia"
+              href="https://linkedin.com/company/arquetype"
               className="text-white/40 hover:text-[#7C3AED] transition-colors"
             >
               <Linkedin className="h-5 w-5" />
             </Link>
             <Link
-              href="https://github.com/syntheia"
+              href="https://github.com/arquetype"
               className="text-white/40 hover:text-[#7C3AED] transition-colors"
             >
               <Github className="h-5 w-5" />

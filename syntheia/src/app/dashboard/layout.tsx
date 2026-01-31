@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Sparkles,
   LayoutDashboard,
   FileText,
   Users,
@@ -12,7 +11,6 @@ import {
   Settings,
   CreditCard,
   LogOut,
-  Plus,
   Menu,
   X,
   Loader2,
@@ -20,7 +18,6 @@ import {
   Activity,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -108,10 +105,10 @@ export default function DashboardLayout({
 
   if (isPending) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB]">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <p className="text-gray-500">Loading...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED]" />
+          <p className="text-[#667085]">Loading...</p>
         </div>
       </div>
     );
@@ -121,7 +118,7 @@ export default function DashboardLayout({
   const userInitials = getInitials(user?.name, user?.email || "U");
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F9FAFB]">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
@@ -133,24 +130,22 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r transform transition-transform duration-200 lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-[#E5E7EB] transform transition-transform duration-200 lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex h-full flex-col">
           {/* Logo */}
-          <div className="flex h-16 items-center justify-between px-4 border-b">
+          <div className="flex h-16 items-center justify-between px-4 border-b border-[#E5E7EB]">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-blue-800">
-                <Sparkles className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold">Syntheia</span>
+              <div className="w-2 h-2 rounded-full bg-[#7C3AED]" />
+              <span className="text-base font-semibold text-[#1A1A2E]">Arquetype</span>
             </Link>
             <button
-              className="lg:hidden p-2 rounded-md hover:bg-gray-100"
+              className="lg:hidden p-2 rounded-md hover:bg-[#F9FAFB]"
               onClick={() => setSidebarOpen(false)}
             >
-              <X className="h-5 w-5" />
+              <X className="h-5 w-5 text-[#667085]" />
             </button>
           </div>
 
@@ -165,8 +160,8 @@ export default function DashboardLayout({
                   className={cn(
                     "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                     isActive
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                      ? "bg-[#F3F0FF] text-[#7C3AED]"
+                      : "text-[#667085] hover:bg-[#F9FAFB] hover:text-[#1A1A2E]"
                   )}
                 >
                   <item.icon className="h-5 w-5" />
@@ -175,7 +170,7 @@ export default function DashboardLayout({
               );
             })}
 
-            <div className="pt-4 mt-4 border-t">
+            <div className="pt-4 mt-4 border-t border-[#E5E7EB]">
               {secondaryNav.map((item) => {
                 const isActive = pathname === item.href;
                 return (
@@ -185,8 +180,8 @@ export default function DashboardLayout({
                     className={cn(
                       "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                       isActive
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                        ? "bg-[#F3F0FF] text-[#7C3AED]"
+                        : "text-[#667085] hover:bg-[#F9FAFB] hover:text-[#1A1A2E]"
                     )}
                   >
                     <item.icon className="h-5 w-5" />
@@ -198,28 +193,28 @@ export default function DashboardLayout({
           </nav>
 
           {/* Credits display */}
-          <div className="p-4 border-t">
-            <div className="rounded-lg bg-gray-50 p-3">
-              <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <div className="p-4 border-t border-[#E5E7EB]">
+            <div className="rounded-lg bg-[#F9FAFB] p-3">
+              <div className="text-xs font-medium text-[#667085] uppercase tracking-wider">
                 Credits Remaining
               </div>
               <div className="mt-1 flex items-baseline gap-1">
-                <span className="text-2xl font-bold text-gray-900">
+                <span className="text-2xl font-bold text-[#1A1A2E]">
                   {credits ? credits.remaining.toLocaleString() : "..."}
                 </span>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-[#667085]">
                   / {credits ? credits.total.toLocaleString() : "..."}
                 </span>
               </div>
-              <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div className="mt-2 h-2 bg-[#E5E7EB] rounded-full overflow-hidden">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all",
                     credits && credits.remaining / credits.total < 0.2
                       ? "bg-red-500"
                       : credits && credits.remaining / credits.total < 0.5
-                      ? "bg-yellow-500"
-                      : "bg-blue-600"
+                      ? "bg-amber-500"
+                      : "bg-[#7C3AED]"
                   )}
                   style={{
                     width: credits
@@ -236,16 +231,16 @@ export default function DashboardLayout({
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 h-16 bg-white border-b">
+        <header className="sticky top-0 z-30 h-16 bg-white border-b border-[#E5E7EB]">
           <div className="flex h-full items-center justify-between px-4 sm:px-6">
             <div className="flex items-center gap-4">
               <button
-                className="lg:hidden p-2 rounded-md hover:bg-gray-100"
+                className="lg:hidden p-2 rounded-md hover:bg-[#F9FAFB]"
                 onClick={() => setSidebarOpen(true)}
               >
-                <Menu className="h-5 w-5" />
+                <Menu className="h-5 w-5 text-[#667085]" />
               </button>
-              <h1 className="text-lg font-semibold text-gray-900">
+              <h1 className="text-lg font-semibold text-[#1A1A2E]">
                 {navigation.find((n) => n.href === pathname)?.name ||
                   secondaryNav.find((n) => n.href === pathname)?.name ||
                   "Dashboard"}
@@ -253,19 +248,12 @@ export default function DashboardLayout({
             </div>
 
             <div className="flex items-center gap-4">
-              <Link href="/dashboard/studies/new">
-                <Button variant="gradient" size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  New Study
-                </Button>
-              </Link>
-
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 rounded-full">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={user?.image || ""} />
-                      <AvatarFallback className="bg-blue-100 text-blue-700">
+                      <AvatarFallback className="bg-[#F3F0FF] text-[#7C3AED] text-sm font-medium">
                         {userInitials}
                       </AvatarFallback>
                     </Avatar>
@@ -274,28 +262,28 @@ export default function DashboardLayout({
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
                     <div className="flex flex-col">
-                      <span>{user?.name || "User"}</span>
-                      <span className="text-xs font-normal text-gray-500">
+                      <span className="text-[#1A1A2E]">{user?.name || "User"}</span>
+                      <span className="text-xs font-normal text-[#667085]">
                         {user?.email}
                       </span>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard/settings">
+                    <Link href="/dashboard/settings" className="cursor-pointer">
                       <Settings className="h-4 w-4 mr-2" />
                       Settings
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/dashboard/billing">
+                    <Link href="/dashboard/billing" className="cursor-pointer">
                       <CreditCard className="h-4 w-4 mr-2" />
                       Billing
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    className="text-red-600 cursor-pointer"
+                    className="text-red-600 cursor-pointer focus:text-red-600 focus:bg-red-50"
                     onClick={handleSignOut}
                     disabled={isSigningOut}
                   >

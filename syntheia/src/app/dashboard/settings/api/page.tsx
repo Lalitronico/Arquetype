@@ -242,7 +242,7 @@ export default function ApiSettingsPage() {
         <CardHeader>
           <CardTitle>API Usage</CardTitle>
           <CardDescription>
-            How to use your API key to access the Syntheia API
+            How to use your API key to access the Arquetype API
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -252,7 +252,7 @@ export default function ApiSettingsPage() {
               Include your API key in the Authorization header:
             </p>
             <pre className="p-3 bg-muted rounded text-sm overflow-x-auto">
-{`curl -X GET "https://api.syntheia.com/v1/studies" \\
+{`curl -X GET "https://api.arquetype.dev/v1/studies" \\
   -H "Authorization: Bearer sk_live_your_api_key"`}
             </pre>
           </div>

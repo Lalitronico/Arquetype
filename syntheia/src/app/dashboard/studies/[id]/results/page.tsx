@@ -362,7 +362,7 @@ function DemographicsAnalysis({
                 </div>
                 <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-blue-500 rounded-full transition-all"
+                    className="h-full bg-[#7C3AED] rounded-full transition-all"
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
@@ -410,7 +410,7 @@ function DemographicsAnalysis({
                     <div key={name} className="space-y-1">
                       <div className="flex justify-between text-sm">
                         <span className="font-medium capitalize">{name}</span>
-                        <span className="text-blue-600 font-bold">
+                        <span className="text-[#7C3AED] font-bold">
                           {stats.mean} <span className="text-gray-400 font-normal">({stats.count})</span>
                         </span>
                       </div>
@@ -431,7 +431,7 @@ function DemographicsAnalysis({
                 })}
               </div>
               <div className="pt-4 border-t text-xs text-gray-500">
-                Overall mean: <span className="font-medium text-blue-600">{question.mean}</span>
+                Overall mean: <span className="font-medium text-[#7C3AED]">{question.mean}</span>
               </div>
             </div>
           ) : (
@@ -557,7 +557,7 @@ function DemographicInsights({
               ? "bg-green-50 text-green-800"
               : insight.type === "negative"
               ? "bg-red-50 text-red-800"
-              : "bg-blue-50 text-blue-800"
+              : "bg-[#F3F0FF] text-[#6D28D9]"
           }`}
         >
           {insight.type === "positive" && <ThumbsUp className="h-5 w-5 flex-shrink-0" />}
@@ -632,7 +632,7 @@ function WordCloud({ texts }: { texts: string[] }) {
 
     // Color palette
     const colors = [
-      "text-blue-600", "text-indigo-600", "text-purple-600",
+      "text-[#7C3AED]", "text-indigo-600", "text-purple-600",
       "text-pink-600", "text-emerald-600", "text-teal-600",
       "text-cyan-600", "text-sky-600", "text-violet-600",
     ];
@@ -712,7 +712,7 @@ export default function StudyResultsPage({
     return (
       <div className="flex items-center justify-center py-12">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED]" />
           <p className="text-gray-500">Loading results...</p>
         </div>
       </div>
@@ -1095,8 +1095,8 @@ export default function StudyResultsPage({
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
-                <Users className="h-6 w-6 text-blue-600" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#F3F0FF]">
+                <Users className="h-6 w-6 text-[#7C3AED]" />
               </div>
               <div>
                 <div className="text-2xl font-bold">{study.sampleSize}</div>
@@ -1199,7 +1199,7 @@ export default function StudyResultsPage({
                             </span>
                             <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
                               <div
-                                className="h-full bg-blue-500 rounded-full transition-all"
+                                className="h-full bg-[#7C3AED] rounded-full transition-all"
                                 style={{ width: `${pct}%` }}
                               />
                             </div>
@@ -1211,19 +1211,19 @@ export default function StudyResultsPage({
                       </div>
                       <div className="flex gap-6 pt-4 border-t">
                         <div>
-                          <div className="text-2xl font-bold text-blue-600">
+                          <div className="text-2xl font-bold text-[#7C3AED]">
                             {question.mean}
                           </div>
                           <div className="text-xs text-gray-500">Mean</div>
                         </div>
                         <div>
-                          <div className="text-2xl font-bold text-blue-600">
+                          <div className="text-2xl font-bold text-[#7C3AED]">
                             {question.median}
                           </div>
                           <div className="text-xs text-gray-500">Median</div>
                         </div>
                         <div>
-                          <div className="text-2xl font-bold text-blue-600">
+                          <div className="text-2xl font-bold text-[#7C3AED]">
                             {question.stdDev}
                           </div>
                           <div className="text-xs text-gray-500">Std Dev</div>
@@ -1234,7 +1234,7 @@ export default function StudyResultsPage({
                   {question.type === "nps" && question.npsData && (
                     <div className="space-y-4">
                       <div className="text-center">
-                        <div className="text-5xl font-bold text-blue-600">
+                        <div className="text-5xl font-bold text-[#7C3AED]">
                           {question.npsData.npsScore}
                         </div>
                         <div className="text-sm text-gray-500">NPS Score</div>
@@ -1274,7 +1274,7 @@ export default function StudyResultsPage({
                                 </span>
                                 <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
                                   <div
-                                    className="h-full bg-blue-500 rounded-full transition-all"
+                                    className="h-full bg-[#7C3AED] rounded-full transition-all"
                                     style={{ width: `${optionCount}%` }}
                                   />
                                 </div>
@@ -1292,7 +1292,7 @@ export default function StudyResultsPage({
                               </span>
                               <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
                                 <div
-                                  className="h-full bg-blue-500 rounded-full transition-all"
+                                  className="h-full bg-[#7C3AED] rounded-full transition-all"
                                   style={{ width: `${pct}%` }}
                                 />
                               </div>
@@ -1319,7 +1319,7 @@ export default function StudyResultsPage({
                               <span
                                 key={keyword}
                                 className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  i === 0 ? "bg-blue-100 text-blue-700" :
+                                  i === 0 ? "bg-[#F3F0FF] text-[#7C3AED]" :
                                   i === 1 ? "bg-indigo-100 text-indigo-700" :
                                   i === 2 ? "bg-purple-100 text-purple-700" :
                                   "bg-gray-100 text-gray-700"
@@ -1345,7 +1345,7 @@ export default function StudyResultsPage({
                       {/* Response Count */}
                       <div className="pt-2 border-t flex items-center justify-between">
                         <span className="text-xs text-gray-500">{question.totalResponses} responses</span>
-                        <span className="text-xs text-blue-600 font-medium">View all →</span>
+                        <span className="text-xs text-[#7C3AED] font-medium">View all →</span>
                       </div>
                     </div>
                   )}
@@ -1419,13 +1419,13 @@ export default function StudyResultsPage({
                       {/* Summary Stats */}
                       <div className="flex gap-6 pt-4 border-t">
                         <div>
-                          <div className="text-2xl font-bold text-blue-600">
+                          <div className="text-2xl font-bold text-[#7C3AED]">
                             {question.mean}
                           </div>
                           <div className="text-xs text-gray-500">Overall Mean</div>
                         </div>
                         <div>
-                          <div className="text-2xl font-bold text-blue-600">
+                          <div className="text-2xl font-bold text-[#7C3AED]">
                             {question.stdDev}
                           </div>
                           <div className="text-xs text-gray-500">Std Dev</div>
@@ -1656,7 +1656,7 @@ export default function StudyResultsPage({
                                 {/* Selection percentage badge */}
                                 <div className={`absolute -top-2 -right-2 px-2 py-1 rounded-full text-xs font-bold ${
                                   selectPct >= 40 ? "bg-green-500 text-white" :
-                                  selectPct >= 20 ? "bg-blue-500 text-white" :
+                                  selectPct >= 20 ? "bg-[#7C3AED] text-white" :
                                   "bg-gray-200 text-gray-700"
                                 }`}>
                                   {selectPct}%
@@ -1742,25 +1742,25 @@ export default function StudyResultsPage({
                   <h3 className="text-lg font-medium">{currentQuestion.text}</h3>
                   <div className="grid grid-cols-4 gap-4">
                     <div className="p-4 bg-gray-50 rounded-lg text-center">
-                      <div className="text-2xl font-bold text-blue-600">
+                      <div className="text-2xl font-bold text-[#7C3AED]">
                         {currentQuestion.totalResponses}
                       </div>
                       <div className="text-xs text-gray-500">Responses</div>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-lg text-center">
-                      <div className="text-2xl font-bold text-blue-600">
+                      <div className="text-2xl font-bold text-[#7C3AED]">
                         {currentQuestion.mean}
                       </div>
                       <div className="text-xs text-gray-500">Mean</div>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-lg text-center">
-                      <div className="text-2xl font-bold text-blue-600">
+                      <div className="text-2xl font-bold text-[#7C3AED]">
                         {currentQuestion.stdDev}
                       </div>
                       <div className="text-xs text-gray-500">Std Dev</div>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-lg text-center">
-                      <div className="text-2xl font-bold text-blue-600">
+                      <div className="text-2xl font-bold text-[#7C3AED]">
                         {currentQuestion.avgConfidence}%
                       </div>
                       <div className="text-xs text-gray-500">Avg Confidence</div>
@@ -1896,7 +1896,7 @@ export default function StudyResultsPage({
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Hash className="h-5 w-5 text-blue-500" />
+                    <Hash className="h-5 w-5 text-[#7C3AED]" />
                     Word Cloud
                   </CardTitle>
                   <CardDescription>
@@ -1924,7 +1924,7 @@ export default function StudyResultsPage({
                       .map(([emotion, value]) => (
                         <div key={emotion} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                           <span className="capitalize text-sm">{emotion}</span>
-                          <span className="font-medium text-blue-600">
+                          <span className="font-medium text-[#7C3AED]">
                             {(value * 100).toFixed(0)}%
                           </span>
                         </div>
@@ -1971,7 +1971,7 @@ export default function StudyResultsPage({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-medium">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F3F0FF] text-[#7C3AED] font-medium">
                           {response.persona?.demographics?.age || "?"}
                         </div>
                         <div>
@@ -2022,7 +2022,7 @@ export default function StudyResultsPage({
       {/* Watermark notice */}
       <div className="p-4 bg-gray-100 rounded-lg text-center text-sm text-gray-600">
         <strong>Note:</strong> This report was generated with synthetic
-        respondents using Syntheia&apos;s SSR methodology. Results should be used for
+        respondents using Arquetype&apos;s SSR methodology. Results should be used for
         exploratory research and validated with human panels for critical
         decisions.
       </div>

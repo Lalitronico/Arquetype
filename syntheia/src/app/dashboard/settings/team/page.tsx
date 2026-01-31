@@ -145,7 +145,7 @@ export default function TeamSettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED]" />
       </div>
     );
   }
@@ -285,7 +285,7 @@ export default function TeamSettingsPage() {
                 Only one owner per organization.
               </div>
             </div>
-            <div className="flex items-start gap-4 p-4 bg-blue-50 rounded-lg">
+            <div className="flex items-start gap-4 p-4 bg-[#F3F0FF] rounded-lg">
               <div className="font-medium min-w-[80px]">Admin</div>
               <div className="text-sm text-muted-foreground">
                 Can invite and remove members, manage studies, and access the activity log.

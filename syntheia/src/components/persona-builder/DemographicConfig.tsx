@@ -201,7 +201,7 @@ export function DemographicConfig({ value, onChange }: DemographicConfigProps) {
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 relative">
             <div
-              className="bg-blue-500 h-2 rounded-full"
+              className="bg-[#7C3AED] h-2 rounded-full"
               style={{
                 marginLeft: `${((ageRange.min - 18) / (100 - 18)) * 100}%`,
                 width: `${((ageRange.max - ageRange.min) / (100 - 18)) * 100}%`,
@@ -253,7 +253,7 @@ export function DemographicConfig({ value, onChange }: DemographicConfigProps) {
           </div>
           <div className="w-full h-3 rounded-full overflow-hidden flex">
             <div
-              className="bg-blue-500 h-full"
+              className="bg-[#7C3AED] h-full"
               style={{ width: `${genderDist.male * 100}%` }}
             />
             <div
@@ -334,7 +334,7 @@ export function DemographicConfig({ value, onChange }: DemographicConfigProps) {
                 variant={locations.includes(location) ? "default" : "outline"}
                 className={`cursor-pointer transition-colors ${
                   locations.includes(location)
-                    ? "bg-blue-500 hover:bg-blue-600"
+                    ? "bg-[#7C3AED] hover:bg-[#6D28D9]"
                     : "hover:bg-gray-100"
                 }`}
                 onClick={() => toggleLocation(location)}

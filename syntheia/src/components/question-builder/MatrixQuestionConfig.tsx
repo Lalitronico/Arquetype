@@ -78,8 +78,8 @@ export function MatrixQuestionConfig({ value, onChange }: MatrixQuestionConfigPr
   );
 
   return (
-    <div className="space-y-4 p-4 border rounded-lg bg-blue-50/30">
-      <div className="text-sm font-medium text-blue-700">Matrix Question Configuration</div>
+    <div className="space-y-4 p-4 border rounded-lg bg-[#F3F0FF]/30">
+      <div className="text-sm font-medium text-[#7C3AED]">Matrix Question Configuration</div>
 
       {/* Items to Rate */}
       <div className="space-y-2">

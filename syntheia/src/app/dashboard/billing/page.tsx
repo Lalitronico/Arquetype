@@ -188,7 +188,7 @@ function BillingContent() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED]" />
       </div>
     );
   }
@@ -253,7 +253,7 @@ function BillingContent() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-blue-600" />
+                  <Zap className="h-5 w-5 text-[#7C3AED]" />
                   Current Plan
                 </CardTitle>
               </CardHeader>
@@ -306,7 +306,7 @@ function BillingContent() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5 text-blue-600" />
+                  <CreditCard className="h-5 w-5 text-[#7C3AED]" />
                   Credits Usage
                 </CardTitle>
               </CardHeader>
@@ -350,13 +350,13 @@ function BillingContent() {
                     key={plan.id}
                     className={`relative ${
                       plan.popular
-                        ? "border-blue-500 shadow-lg"
+                        ? "border-[#7C3AED] shadow-lg"
                         : "border-gray-200"
                     }`}
                   >
                     {plan.popular && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <Badge className="bg-blue-600">Most Popular</Badge>
+                        <Badge className="bg-[#7C3AED]">Most Popular</Badge>
                       </div>
                     )}
                     <CardHeader className="text-center pt-8">
@@ -411,7 +411,7 @@ function BillingContent() {
           </div>
 
           {/* Enterprise CTA */}
-          <Card className="bg-gradient-to-r from-blue-50 to-emerald-50 border-0">
+          <Card className="bg-gradient-to-r from-[#F3F0FF] to-emerald-50 border-0">
             <CardContent className="py-8">
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div>
@@ -438,7 +438,7 @@ export default function BillingPage() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED]" />
         </div>
       }
     >

@@ -5,7 +5,7 @@ import { Star } from "lucide-react";
 
 const testimonials = [
   {
-    quote: "Syntheia cut our research cycle from 3 weeks to 2 days. The quality is indistinguishable from our traditional panels.",
+    quote: "Arquetype cut our research cycle from 3 weeks to 2 days. The quality is indistinguishable from our traditional panels.",
     name: "Sarah Chen",
     role: "VP of Consumer Insights",
     company: "Global CPG Brand",
@@ -17,13 +17,13 @@ const testimonials = [
     company: "Market Research Agency",
   },
   {
-    quote: "We use Syntheia for rapid concept testing. Being able to get 500 responses in an hour has transformed how we iterate.",
+    quote: "We use Arquetype for rapid concept testing. Being able to get 500 responses in an hour has transformed how we iterate.",
     name: "Emily Watson",
     role: "Innovation Lead",
     company: "Fortune 500 Retailer",
   },
   {
-    quote: "The qualitative insights are what sets Syntheia apart. We don't just get numbers - we understand the 'why' behind responses.",
+    quote: "The qualitative insights are what sets Arquetype apart. We don't just get numbers - we understand the 'why' behind responses.",
     name: "David Park",
     role: "Head of Product Research",
     company: "Tech Startup",
@@ -47,7 +47,7 @@ const testimonials = [
     company: "Financial Services",
   },
   {
-    quote: "Syntheia has become essential for our agile research sprints. We can iterate on concepts in real-time.",
+    quote: "Arquetype has become essential for our agile research sprints. We can iterate on concepts in real-time.",
     name: "Chris Anderson",
     role: "Product Manager",
     company: "SaaS Company",
@@ -154,7 +154,7 @@ export function TestimonialsGrid() {
             Loved by research teams worldwide
           </h2>
           <p className="mt-4 text-lg text-[#4A4A5A]">
-            See what leading researchers are saying about Syntheia
+            See what leading researchers are saying about Arquetype
           </p>
         </div>
 

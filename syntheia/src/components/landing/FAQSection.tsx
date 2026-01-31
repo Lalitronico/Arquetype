@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
 const faqs = [
@@ -10,9 +10,9 @@ const faqs = [
       "Our SSR methodology has been validated through peer-reviewed research, showing 90% correlation with human panel responses. The AI generates responses that match demographic and psychographic patterns observed in real populations.",
   },
   {
-    question: "What types of research can I conduct with Syntheia?",
+    question: "What types of research can I conduct with Arquetype?",
     answer:
-      "Syntheia works well for concept testing, brand perception studies, message testing, product feedback, and market sizing. It's ideal for exploratory research and rapid iteration. For regulatory or clinical research, we recommend using synthetic data alongside traditional methods.",
+      "Arquetype works well for concept testing, brand perception studies, message testing, product feedback, and market sizing. It's ideal for exploratory research and rapid iteration. For regulatory or clinical research, we recommend using synthetic data alongside traditional methods.",
   },
   {
     question: "How do you ensure response quality?",
@@ -34,89 +34,54 @@ const faqs = [
     answer:
       "Absolutely. We're SOC 2 Type II certified and GDPR compliant. All data is encrypted in transit and at rest. We never use your research data to train our models, and you can request data deletion at any time.",
   },
-  {
-    question: "How fast can I get responses?",
-    answer:
-      "Most surveys receive complete responses within 5 minutes. For large-scale studies (1000+ respondents), expect results within 30 minutes. This is significantly faster than the 2-3 weeks typical of traditional panels.",
-  },
-  {
-    question: "Do you offer a free trial?",
-    answer:
-      "Yes! All plans include a 14-day free trial with 50 free respondents. No credit card required to start. You can upgrade or cancel anytime.",
-  },
 ];
 
 export function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
 
   return (
-    <section id="faq" className="relative py-24 bg-[#FAFAFA] overflow-hidden" ref={sectionRef}>
-      {/* Decorative purple accents */}
-      <div className="absolute top-1/4 right-0 w-[400px] h-[400px] bg-[#7C3AED]/5 rounded-full blur-3xl translate-x-1/2" />
-      <div className="absolute bottom-1/4 left-0 w-[350px] h-[350px] bg-[#8B5CF6]/5 rounded-full blur-3xl -translate-x-1/2" />
+    <section id="faq" className="relative py-24 bg-white overflow-hidden">
+      {/* Purple blur circles */}
+      <div className="absolute top-20 -left-32 w-64 h-64 bg-[#7C3AED]/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-20 -right-32 w-80 h-80 bg-[#7C3AED]/8 rounded-full blur-3xl" />
+      <div className="absolute top-1/2 left-1/4 w-48 h-48 bg-[#A78BFA]/10 rounded-full blur-2xl" />
 
-      <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+      <div className="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+        {/* Header */}
         <div className="text-center mb-16">
-          <p className="section-number mb-4">FAQ</p>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1A1A2E]">
+          <h2 className="text-3xl font-semibold text-[#1A1A2E]">
             Frequently asked questions
           </h2>
-          <p className="mt-4 text-lg text-[#4A4A5A]">
-            Everything you need to know about Syntheia
+          <p className="mt-4 text-[#667085]">
+            Everything you need to know about Arquetype
           </p>
         </div>
 
-        <div className="space-y-4">
+        {/* FAQ List */}
+        <div className="divide-y divide-[#E5E7EB]">
           {faqs.map((faq, i) => (
-            <div
-              key={i}
-              className={`bg-white rounded-xl border border-[#E5E7EB] overflow-hidden ${
-                isVisible
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-4"
-              }`}
-              style={{ transitionDelay: `${i * 50}ms`, transition: "all 0.4s ease" }}
-            >
+            <div key={i} className="py-6">
               <button
                 onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                className="w-full flex items-center justify-between p-6 text-left hover:bg-[#FAFAFA] transition-colors"
+                className="w-full flex items-start justify-between text-left group"
               >
-                <span className="font-medium text-[#1A1A2E] pr-4">
+                <span className="font-medium text-[#1A1A2E] pr-8 group-hover:text-[#7C3AED] transition-colors">
                   {faq.question}
                 </span>
                 <ChevronDown
-                  className={`h-5 w-5 text-[#6B7280] shrink-0 transition-transform duration-200 ${
-                    openIndex === i ? "rotate-180" : ""
+                  className={`h-5 w-5 text-[#9CA3AF] shrink-0 mt-0.5 transition-transform duration-200 ${
+                    openIndex === i ? "rotate-180 text-[#7C3AED]" : ""
                   }`}
                 />
               </button>
               <div
-                className={`overflow-hidden transition-all duration-200 ${
-                  openIndex === i ? "max-h-96" : "max-h-0"
+                className={`overflow-hidden transition-all duration-200 ease-out ${
+                  openIndex === i ? "max-h-96 mt-4" : "max-h-0"
                 }`}
               >
-                <div className="px-6 pb-6 text-[#4A4A5A] leading-relaxed">
+                <p className="text-[#667085] leading-relaxed pr-12">
                   {faq.answer}
-                </div>
+                </p>
               </div>
             </div>
           ))}

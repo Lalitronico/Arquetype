@@ -29,7 +29,7 @@ function InstantResultsIllustration() {
             <span className="text-[10px] text-[#6B7280]">3 weeks</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-[#7C3AED] font-medium w-20">Syntheia</span>
+            <span className="text-[10px] text-[#7C3AED] font-medium w-20">Arquetype</span>
             <div className="flex-1 h-2 bg-[#7C3AED]/20 rounded-full overflow-hidden">
               <div className="h-full w-full bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] rounded-full animate-pulse" />
             </div>

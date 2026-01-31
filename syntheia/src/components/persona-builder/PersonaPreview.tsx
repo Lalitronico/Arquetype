@@ -48,7 +48,7 @@ export function PersonaPreview({ config, count = 3 }: PersonaPreviewProps) {
   const getGenderColor = (gender: string) => {
     switch (gender) {
       case "male":
-        return "bg-blue-100 text-blue-700";
+        return "bg-[#F3F0FF] text-[#7C3AED]";
       case "female":
         return "bg-pink-100 text-pink-700";
       case "non-binary":

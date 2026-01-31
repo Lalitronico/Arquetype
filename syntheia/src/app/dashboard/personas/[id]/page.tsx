@@ -94,7 +94,7 @@ const INDUSTRIES = [
 
 const statusColors: Record<string, string> = {
   draft: "bg-gray-100 text-gray-700",
-  running: "bg-blue-100 text-blue-700",
+  running: "bg-[#EDE9FE] text-[#7C3AED]",
   completed: "bg-green-100 text-green-700",
   archived: "bg-orange-100 text-orange-700",
 };
@@ -201,7 +201,7 @@ export default function PersonaDetailPage({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED]" />
       </div>
     );
   }

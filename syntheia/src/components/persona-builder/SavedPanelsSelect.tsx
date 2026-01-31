@@ -330,7 +330,7 @@ export function SavedPanelsSelect({
                     variant="ghost"
                     size="sm"
                     onClick={() => onSelect(config.config)}
-                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    className="text-[#7C3AED] hover:text-[#6D28D9] hover:bg-[#F3F0FF]"
                   >
                     Load
                   </Button>

@@ -77,7 +77,7 @@ export function SampleSizeCalculator({
   return (
     <div className="space-y-4 p-4 bg-gray-50 rounded-lg border">
       <div className="flex items-center gap-2 text-sm font-medium">
-        <Calculator className="h-4 w-4 text-blue-600" />
+        <Calculator className="h-4 w-4 text-[#7C3AED]" />
         Sample Size Calculator
       </div>
 
@@ -127,7 +127,7 @@ export function SampleSizeCalculator({
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <span className="text-sm font-medium text-blue-600">±{marginOfError}%</span>
+            <span className="text-sm font-medium text-[#7C3AED]">±{marginOfError}%</span>
           </div>
           <Slider
             value={[marginOfError]}
@@ -170,10 +170,10 @@ export function SampleSizeCalculator({
 
       {/* Result */}
       {calculatedSize && (
-        <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="flex items-center justify-between p-3 bg-[#F3F0FF] rounded-lg border border-[#EDE9FE]">
           <div>
             <div className="text-sm text-gray-600">Recommended sample size:</div>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-[#7C3AED]">
               {calculatedSize.toLocaleString()}
               <span className="text-sm font-normal text-gray-500 ml-1">respondents</span>
             </div>

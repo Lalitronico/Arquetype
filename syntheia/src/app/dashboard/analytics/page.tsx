@@ -98,10 +98,10 @@ interface ApiUsageData {
   }>;
 }
 
-const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+const COLORS = ["#7C3AED", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 const STATUS_COLORS: Record<string, string> = {
   draft: "#9ca3af",
-  running: "#3b82f6",
+  running: "#7C3AED",
   completed: "#10b981",
 };
 
@@ -177,7 +177,7 @@ export default function AnalyticsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED]" />
       </div>
     );
   }
@@ -312,7 +312,7 @@ export default function AnalyticsPage() {
                     <Line
                       type="monotone"
                       dataKey="creditsUsed"
-                      stroke="#3b82f6"
+                      stroke="#7C3AED"
                       strokeWidth={2}
                       dot={false}
                       name="Total Credits"
@@ -338,7 +338,7 @@ export default function AnalyticsPage() {
               </div>
               <div className="flex items-center justify-center gap-6 mt-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-blue-500" />
+                  <div className="w-3 h-3 rounded-full bg-[#7C3AED]" />
                   <span className="text-sm text-gray-600">Total</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -475,7 +475,7 @@ export default function AnalyticsPage() {
           <CardContent>
             <div className="grid gap-6 md:grid-cols-3 mb-6">
               <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">
+                <div className="text-2xl font-bold text-[#7C3AED]">
                   {formatNumber(apiUsageData.totalCalls)}
                 </div>
                 <div className="text-sm text-gray-500">Total API Calls</div>
@@ -533,7 +533,7 @@ export default function AnalyticsPage() {
             </h3>
             <p className="text-gray-500 max-w-md mx-auto">
               API usage metrics will appear here once you start using the
-              Syntheia API. Create an API key in Settings to get started.
+              Arquetype API. Create an API key in Settings to get started.
             </p>
           </CardContent>
         </Card>

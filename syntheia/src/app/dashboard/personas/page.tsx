@@ -278,7 +278,7 @@ export default function PersonasPage() {
       {/* Loading state */}
       {isLoading && (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED]" />
         </div>
       )}
 
@@ -328,7 +328,7 @@ export default function PersonasPage() {
                     <div className="min-w-0">
                       <Link
                         href={`/dashboard/personas/${config.id}`}
-                        className="font-semibold text-gray-900 hover:text-blue-600 truncate block"
+                        className="font-semibold text-gray-900 hover:text-[#7C3AED] truncate block"
                       >
                         {config.name}
                       </Link>

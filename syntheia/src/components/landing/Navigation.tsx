@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { Menu, X, Sparkles } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navLinks = [
@@ -40,11 +40,9 @@ export function Navigation() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#6D28D9] shadow-lg shadow-[#7C3AED]/20">
-            <Sparkles className="h-5 w-5 text-white" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-[#1A1A2E]">
-            Syntheia
+          <div className="w-2 h-2 rounded-full bg-[#7C3AED]" />
+          <span className="text-base font-semibold text-[#1A1A2E]">
+            Arquetype
           </span>
         </Link>
 

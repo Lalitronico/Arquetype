@@ -15,7 +15,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Syntheia - Real insights. Synthetic speed.",
+  title: "Arquetype - Real insights. Synthetic speed.",
   description:
     "Generate synthetic survey respondents using AI. Get market research insights in minutes, not weeks. Trusted by 500+ research teams.",
   keywords: [
@@ -24,12 +24,12 @@ export const metadata: Metadata = {
     "AI survey",
     "consumer insights",
     "synthetic panelists",
-    "Syntheia",
+    "Arquetype",
     "SSR methodology",
   ],
-  authors: [{ name: "Syntheia" }],
+  authors: [{ name: "Arquetype" }],
   openGraph: {
-    title: "Syntheia - Real insights. Synthetic speed.",
+    title: "Arquetype - Real insights. Synthetic speed.",
     description:
       "Generate synthetic survey respondents using AI. Get market research insights in minutes, not weeks.",
     type: "website",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Syntheia - Real insights. Synthetic speed.",
+    title: "Arquetype - Real insights. Synthetic speed.",
     description:
       "Generate synthetic survey respondents using AI. Get market research insights in minutes, not weeks.",
   },

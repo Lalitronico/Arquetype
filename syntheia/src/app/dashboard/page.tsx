@@ -42,10 +42,10 @@ interface DashboardStats {
 }
 
 const statusColors = {
-  draft: "bg-gray-100 text-gray-700",
-  running: "bg-blue-100 text-blue-700",
-  completed: "bg-green-100 text-green-700",
-  archived: "bg-orange-100 text-orange-700",
+  draft: "bg-[#F3F4F6] text-[#667085]",
+  running: "bg-[#EDE9FE] text-[#7C3AED]",
+  completed: "bg-emerald-100 text-emerald-700",
+  archived: "bg-amber-100 text-amber-700",
 };
 
 export default function DashboardPage() {
@@ -90,7 +90,7 @@ export default function DashboardPage() {
 
         // Check if should show onboarding
         const hasCompletedOnboarding = localStorage.getItem(
-          "syntheia_onboarding_completed"
+          "arquetype_onboarding_completed"
         );
         const hasNoStudies = !studiesData.data || studiesData.data.length === 0;
 
@@ -108,7 +108,7 @@ export default function DashboardPage() {
   }, []);
 
   const handleOnboardingComplete = () => {
-    localStorage.setItem("syntheia_onboarding_completed", "true");
+    localStorage.setItem("arquetype_onboarding_completed", "true");
     setShowOnboarding(false);
   };
 
@@ -123,7 +123,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED]" />
       </div>
     );
   }
@@ -142,13 +142,13 @@ export default function DashboardPage() {
       {/* Welcome section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Welcome back!</h2>
-          <p className="text-gray-600">
+          <h2 className="text-2xl font-bold text-[#1A1A2E]">Welcome back!</h2>
+          <p className="text-[#667085]">
             Here&apos;s what&apos;s happening with your synthetic research.
           </p>
         </div>
         <Link href="/dashboard/studies/new">
-          <Button variant="gradient" className="gap-2">
+          <Button className="gap-2 bg-[#7C3AED] hover:bg-[#6D28D9] text-white">
             <Plus className="h-4 w-4" />
             Create New Study
           </Button>
@@ -158,66 +158,66 @@ export default function DashboardPage() {
       {/* Stats grid */}
       {stats && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
+          <Card className="border-[#E5E7EB]">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-[#667085]">
                 Total Studies
               </CardTitle>
-              <FileText className="h-4 w-4 text-gray-400" />
+              <FileText className="h-4 w-4 text-[#9CA3AF]" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalStudies}</div>
-              <p className="text-xs text-gray-500 mt-1">
+              <div className="text-2xl font-bold text-[#1A1A2E]">{stats.totalStudies}</div>
+              <p className="text-xs text-[#667085] mt-1">
                 {studies.filter((s) => s.status === "completed").length}{" "}
                 completed
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-[#E5E7EB]">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-[#667085]">
                 Total Respondents
               </CardTitle>
-              <Users className="h-4 w-4 text-gray-400" />
+              <Users className="h-4 w-4 text-[#9CA3AF]" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold text-[#1A1A2E]">
                 {stats.totalRespondents.toLocaleString()}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-[#667085] mt-1">
                 Synthetic responses generated
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-[#E5E7EB]">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-[#667085]">
                 Avg. Confidence
               </CardTitle>
-              <TrendingUp className="h-4 w-4 text-gray-400" />
+              <TrendingUp className="h-4 w-4 text-[#9CA3AF]" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.avgConfidence}%</div>
-              <p className="text-xs text-gray-500 mt-1">
+              <div className="text-2xl font-bold text-[#1A1A2E]">{stats.avgConfidence}%</div>
+              <p className="text-xs text-[#667085] mt-1">
                 SSR methodology score
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-[#E5E7EB]">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-[#667085]">
                 Credits Remaining
               </CardTitle>
-              <Clock className="h-4 w-4 text-gray-400" />
+              <Clock className="h-4 w-4 text-[#9CA3AF]" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold text-[#1A1A2E]">
                 {stats.creditsRemaining.toLocaleString()}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-[#667085] mt-1">
                 of {stats.creditsMonthly.toLocaleString()} monthly
               </p>
             </CardContent>
@@ -227,27 +227,28 @@ export default function DashboardPage() {
 
       {/* Empty state for new users */}
       {!hasStudies && (
-        <Card className="border-dashed">
+        <Card className="border-dashed border-[#E5E7EB]">
           <CardContent className="py-12 text-center">
-            <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-blue-100 mb-4">
-              <Sparkles className="h-8 w-8 text-blue-600" />
+            <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-[#F3F0FF] mb-4">
+              <Sparkles className="h-8 w-8 text-[#7C3AED]" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg font-semibold text-[#1A1A2E] mb-2">
               Create Your First Study
             </h3>
-            <p className="text-gray-600 max-w-md mx-auto mb-6">
+            <p className="text-[#667085] max-w-md mx-auto mb-6">
               Get instant market research insights using AI-powered synthetic
               respondents. Your first 50 respondents are free!
             </p>
             <div className="flex justify-center gap-4">
               <Link href="/dashboard/studies/new">
-                <Button variant="gradient" className="gap-2">
+                <Button className="gap-2 bg-[#7C3AED] hover:bg-[#6D28D9] text-white">
                   <Plus className="h-4 w-4" />
                   Create Study
                 </Button>
               </Link>
               <Button
                 variant="outline"
+                className="border-[#E5E7EB] text-[#667085] hover:text-[#1A1A2E]"
                 onClick={() => setShowOnboarding(true)}
               >
                 Take the Tour
@@ -259,16 +260,16 @@ export default function DashboardPage() {
 
       {/* Recent studies */}
       {hasStudies && (
-        <Card>
+        <Card className="border-[#E5E7EB]">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>Recent Studies</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-[#1A1A2E]">Recent Studies</CardTitle>
+              <CardDescription className="text-[#667085]">
                 Your latest synthetic research projects
               </CardDescription>
             </div>
             <Link href="/dashboard/studies">
-              <Button variant="ghost" size="sm" className="gap-1">
+              <Button variant="ghost" size="sm" className="gap-1 text-[#667085] hover:text-[#1A1A2E]">
                 View all
                 <ArrowRight className="h-4 w-4" />
               </Button>
@@ -286,16 +287,16 @@ export default function DashboardPage() {
                   }
                   className="block"
                 >
-                  <div className="flex items-center justify-between p-4 rounded-lg border hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center justify-between p-4 rounded-lg border border-[#E5E7EB] hover:bg-[#F9FAFB] transition-colors">
                     <div className="flex items-center gap-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-                        <FileText className="h-5 w-5 text-blue-600" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#F3F0FF]">
+                        <FileText className="h-5 w-5 text-[#7C3AED]" />
                       </div>
                       <div>
-                        <div className="font-medium text-gray-900">
+                        <div className="font-medium text-[#1A1A2E]">
                           {study.name}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-[#667085]">
                           {study.status === "completed"
                             ? `${study.sampleSize} respondents`
                             : study.status === "draft"
@@ -308,7 +309,7 @@ export default function DashboardPage() {
                       <Badge className={statusColors[study.status]}>
                         {study.status}
                       </Badge>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-[#667085]">
                         {formatDate(study.createdAt)}
                       </span>
                     </div>
@@ -322,16 +323,16 @@ export default function DashboardPage() {
 
       {/* Quick actions */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+        <Card className="hover:shadow-md transition-shadow cursor-pointer border-[#E5E7EB]">
           <Link href="/dashboard/studies/new">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100">
-                  <Plus className="h-6 w-6 text-blue-600" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F3F0FF]">
+                  <Plus className="h-6 w-6 text-[#7C3AED]" />
                 </div>
                 <div>
-                  <div className="font-semibold">New Study</div>
-                  <div className="text-sm text-gray-500">
+                  <div className="font-semibold text-[#1A1A2E]">New Study</div>
+                  <div className="text-sm text-[#667085]">
                     Create a new synthetic survey
                   </div>
                 </div>
@@ -340,7 +341,7 @@ export default function DashboardPage() {
           </Link>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+        <Card className="hover:shadow-md transition-shadow cursor-pointer border-[#E5E7EB]">
           <Link href="/dashboard/personas">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
@@ -348,8 +349,8 @@ export default function DashboardPage() {
                   <Users className="h-6 w-6 text-emerald-600" />
                 </div>
                 <div>
-                  <div className="font-semibold">Persona Library</div>
-                  <div className="text-sm text-gray-500">
+                  <div className="font-semibold text-[#1A1A2E]">Persona Library</div>
+                  <div className="text-sm text-[#667085]">
                     Browse and create personas
                   </div>
                 </div>
@@ -358,16 +359,16 @@ export default function DashboardPage() {
           </Link>
         </Card>
 
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+        <Card className="hover:shadow-md transition-shadow cursor-pointer border-[#E5E7EB]">
           <Link href="/dashboard/analytics">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-100">
-                  <TrendingUp className="h-6 w-6 text-purple-600" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F3F0FF]">
+                  <TrendingUp className="h-6 w-6 text-[#7C3AED]" />
                 </div>
                 <div>
-                  <div className="font-semibold">Analytics</div>
-                  <div className="text-sm text-gray-500">
+                  <div className="font-semibold text-[#1A1A2E]">Analytics</div>
+                  <div className="text-sm text-[#667085]">
                     View insights and trends
                   </div>
                 </div>

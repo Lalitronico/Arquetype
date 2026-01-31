@@ -374,7 +374,7 @@ export default function NewStudyPage() {
 
           {/* Start from Scratch Option */}
           <Card
-            className="border-2 border-dashed hover:border-blue-300 cursor-pointer transition-colors"
+            className="border-2 border-dashed hover:border-[#A78BFA] cursor-pointer transition-colors"
             onClick={startFromScratch}
           >
             <CardContent className="flex items-center gap-4 p-6">
@@ -420,13 +420,13 @@ export default function NewStudyPage() {
               return (
                 <Card
                   key={template.id}
-                  className="hover:border-blue-300 cursor-pointer transition-colors"
+                  className="hover:border-[#A78BFA] cursor-pointer transition-colors"
                   onClick={() => applyTemplate(template)}
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-                        <IconComponent className="h-5 w-5 text-blue-600" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#F3F0FF]">
+                        <IconComponent className="h-5 w-5 text-[#7C3AED]" />
                       </div>
                       <div className="flex-1">
                         <CardTitle className="text-base">{template.name}</CardTitle>
@@ -834,7 +834,7 @@ export default function NewStudyPage() {
                 </div>
                 <div className="flex justify-between border-t pt-3">
                   <dt className="text-gray-900 font-medium">Credits Required</dt>
-                  <dd className="font-bold text-blue-600">{sampleSize}</dd>
+                  <dd className="font-bold text-[#7C3AED]">{sampleSize}</dd>
                 </div>
               </dl>
             </CardContent>

@@ -93,7 +93,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
   if (loading || sessionLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED]" />
       </div>
     );
   }
@@ -102,10 +102,8 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
       {/* Logo */}
       <Link href="/" className="flex items-center gap-2 mb-8">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-blue-800">
-          <Sparkles className="h-6 w-6 text-white" />
-        </div>
-        <span className="text-2xl font-bold">Syntheia</span>
+        <div className="w-2 h-2 rounded-full bg-[#7C3AED]" />
+        <span className="text-2xl font-bold text-[#1A1A2E]">Arquetype</span>
       </Link>
 
       <Card className="w-full max-w-md">
@@ -124,7 +122,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
               <p className="text-sm text-muted-foreground mb-4">
                 Redirecting you to the dashboard...
               </p>
-              <Loader2 className="h-5 w-5 animate-spin mx-auto text-blue-600" />
+              <Loader2 className="h-5 w-5 animate-spin mx-auto text-[#7C3AED]" />
             </CardContent>
           </>
         ) : error && !invitation ? (
@@ -179,8 +177,8 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
         ) : (
           <>
             <CardHeader className="text-center">
-              <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <Users className="h-6 w-6 text-blue-600" />
+              <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-[#F3F0FF] flex items-center justify-center">
+                <Users className="h-6 w-6 text-[#7C3AED]" />
               </div>
               <CardTitle>You&apos;re Invited!</CardTitle>
               <CardDescription>

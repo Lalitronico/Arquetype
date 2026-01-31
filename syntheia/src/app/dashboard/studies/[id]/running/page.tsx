@@ -163,7 +163,7 @@ export default function StudyRunningPage() {
       <div className="max-w-2xl mx-auto py-12">
         <Card>
           <CardContent className="py-12 text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-[#7C3AED]" />
             <p className="text-gray-600">Loading simulation progress...</p>
           </CardContent>
         </Card>
@@ -186,8 +186,8 @@ export default function StudyRunningPage() {
 
       <Card>
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mb-4">
-            <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+          <div className="mx-auto w-16 h-16 rounded-full bg-[#F3F0FF] flex items-center justify-center mb-4">
+            <Loader2 className="h-8 w-8 text-[#7C3AED] animate-spin" />
           </div>
           <CardTitle className="text-2xl">Running Simulation</CardTitle>
           <p className="text-gray-500 mt-1">
@@ -228,8 +228,8 @@ export default function StudyRunningPage() {
 
           {/* Estimated Time */}
           {estimatedSecondsRemaining !== null && estimatedSecondsRemaining > 0 && (
-            <div className="text-center py-3 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-600">
+            <div className="text-center py-3 bg-[#F3F0FF] rounded-lg">
+              <p className="text-sm text-[#7C3AED]">
                 Estimated time remaining: <span className="font-semibold">{formatTime(estimatedSecondsRemaining)}</span>
               </p>
             </div>

@@ -222,7 +222,7 @@ function aggregateResults(
 export async function GET() {
   return NextResponse.json({
     status: "ok",
-    service: "syntheia-simulate",
+    service: "arquetype-simulate",
     timestamp: new Date().toISOString(),
   });
 }

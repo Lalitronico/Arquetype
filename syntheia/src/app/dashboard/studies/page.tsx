@@ -38,7 +38,7 @@ interface Study {
 
 const statusColors: Record<string, string> = {
   draft: "bg-gray-100 text-gray-700",
-  running: "bg-blue-100 text-blue-700",
+  running: "bg-[#EDE9FE] text-[#7C3AED]",
   completed: "bg-green-100 text-green-700",
   archived: "bg-orange-100 text-orange-700",
   cancelled: "bg-red-100 text-red-700",
@@ -203,7 +203,7 @@ export default function StudiesPage() {
       {/* Loading state */}
       {isLoading && (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED]" />
         </div>
       )}
 
@@ -240,8 +240,8 @@ export default function StudiesPage() {
               <CardContent className="p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 shrink-0">
-                      <FileText className="h-6 w-6 text-blue-600" />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#F3F0FF] shrink-0">
+                      <FileText className="h-6 w-6 text-[#7C3AED]" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 flex-wrap">
@@ -251,7 +251,7 @@ export default function StudiesPage() {
                               ? `/dashboard/studies/${study.id}/results`
                               : `/dashboard/studies/${study.id}`
                           }
-                          className="font-semibold text-gray-900 hover:text-blue-600"
+                          className="font-semibold text-gray-900 hover:text-[#7C3AED]"
                         >
                           {study.name}
                         </Link>
@@ -303,7 +303,7 @@ export default function StudiesPage() {
                       </Button>
                     )}
                     {study.status === "running" && (
-                      <Badge className="bg-blue-100 text-blue-700">
+                      <Badge className="bg-[#EDE9FE] text-[#7C3AED]">
                         <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                         Processing...
                       </Badge>

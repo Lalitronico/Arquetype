@@ -188,7 +188,7 @@ export default function CompareStudiesPage() {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-[#7C3AED]" />
           <p className="text-gray-500">Loading studies...</p>
         </div>
       </div>
@@ -246,7 +246,7 @@ export default function CompareStudiesPage() {
                       key={study.id}
                       className={`flex items-center gap-4 p-4 rounded-lg border cursor-pointer transition-colors ${
                         selectedStudies.includes(study.id)
-                          ? "border-blue-500 bg-blue-50"
+                          ? "border-[#7C3AED] bg-[#F3F0FF]"
                           : "border-gray-200 hover:border-gray-300"
                       }`}
                       onClick={() => toggleStudySelection(study.id)}
@@ -263,7 +263,7 @@ export default function CompareStudiesPage() {
                         </p>
                       </div>
                       {selectedStudies.includes(study.id) && (
-                        <Badge className="bg-blue-100 text-blue-700">
+                        <Badge className="bg-[#EDE9FE] text-[#7C3AED]">
                           Selected
                         </Badge>
                       )}
@@ -444,8 +444,8 @@ export default function CompareStudiesPage() {
                             <div
                               className={`w-full rounded-t transition-all ${
                                 i === trend.dataPoints.length - 1
-                                  ? "bg-blue-500"
-                                  : "bg-blue-300"
+                                  ? "bg-[#7C3AED]"
+                                  : "bg-[#A78BFA]"
                               }`}
                               style={{ height: `${height}%` }}
                             />
@@ -602,7 +602,7 @@ export default function CompareStudiesPage() {
                   ))}
 
                 {comparisonData.trends.every((t) => t.trend === "stable") && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 text-blue-800">
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-[#F3F0FF] text-[#6D28D9]">
                     <Minus className="h-5 w-5 flex-shrink-0" />
                     <span className="text-sm">
                       Responses have remained relatively stable across all compared
