@@ -148,8 +148,8 @@ export function PsychographicConfig({ value, onChange }: PsychographicConfigProp
                 variant={values.includes(val) ? "default" : "outline"}
                 className={`cursor-pointer transition-colors ${
                   values.includes(val)
-                    ? "bg-violet-500 hover:bg-violet-600"
-                    : "hover:bg-gray-100"
+                    ? "bg-violet-500 hover:bg-violet-600 text-white"
+                    : "hover:bg-gray-100 text-gray-700"
                 }`}
                 onClick={() => toggleItem(values, val, "values")}
               >
@@ -189,8 +189,8 @@ export function PsychographicConfig({ value, onChange }: PsychographicConfigProp
                 variant={lifestyles.includes(lifestyle) ? "default" : "outline"}
                 className={`cursor-pointer transition-colors ${
                   lifestyles.includes(lifestyle)
-                    ? "bg-cyan-500 hover:bg-cyan-600"
-                    : "hover:bg-gray-100"
+                    ? "bg-cyan-500 hover:bg-cyan-600 text-white"
+                    : "hover:bg-gray-100 text-gray-700"
                 }`}
                 onClick={() => toggleItem(lifestyles, lifestyle, "lifestyles")}
               >
@@ -230,8 +230,8 @@ export function PsychographicConfig({ value, onChange }: PsychographicConfigProp
                 variant={interests.includes(interest) ? "default" : "outline"}
                 className={`cursor-pointer transition-colors ${
                   interests.includes(interest)
-                    ? "bg-amber-500 hover:bg-amber-600"
-                    : "hover:bg-gray-100"
+                    ? "bg-amber-500 hover:bg-amber-600 text-white"
+                    : "hover:bg-gray-100 text-gray-700"
                 }`}
                 onClick={() => toggleItem(interests, interest, "interests")}
               >
@@ -271,8 +271,8 @@ export function PsychographicConfig({ value, onChange }: PsychographicConfigProp
                 variant={personalities.includes(personality) ? "default" : "outline"}
                 className={`cursor-pointer transition-colors ${
                   personalities.includes(personality)
-                    ? "bg-rose-500 hover:bg-rose-600"
-                    : "hover:bg-gray-100"
+                    ? "bg-rose-500 hover:bg-rose-600 text-white"
+                    : "hover:bg-gray-100 text-gray-700"
                 }`}
                 onClick={() => toggleItem(personalities, personality, "personalities")}
               >

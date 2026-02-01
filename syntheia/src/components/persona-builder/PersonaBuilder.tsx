@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, Sliders, Upload, Save, Building2 } from "lucide-react";
+import { Users, Sliders, Upload, Save, Building2, Layers } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PersonaConfig, PERSONA_PRESETS, PresetName } from "@/lib/persona-generator";
+import {
+  PersonaConfig,
+  PERSONA_PRESETS,
+  PresetName,
+  SocioeconomicLevel,
+  NSE_CONFIG,
+  DIVERSE_POPULATION_NSE,
+} from "@/lib/persona-generator";
 import { INDUSTRY_TEMPLATES, IndustryTemplate } from "@/lib/industry-templates";
 import { DemographicConfig } from "./DemographicConfig";
 import { PsychographicConfig } from "./PsychographicConfig";
@@ -37,16 +44,29 @@ const SAMPLE_SIZES = [
   { value: 1000, label: "1,000", description: "Enterprise scale" },
 ];
 
+// Age/Lifestyle-based presets
 const PERSONA_PRESET_OPTIONS: { value: PresetName; label: string; description: string }[] = [
   { value: "generalPopulation", label: "General Population", description: "US adults 18-75" },
-  { value: "millennials", label: "Millennials", description: "Ages 28-43" },
-  { value: "genZ", label: "Gen Z", description: "Ages 18-27" },
-  { value: "babyBoomers", label: "Baby Boomers", description: "Ages 60-78" },
-  { value: "highIncome", label: "High Income", description: "$125K+ household income" },
+  { value: "diversePopulation", label: "Diverse Population", description: "All socioeconomic levels" },
+  { value: "millennials", label: "Millennials", description: "Ages 28-43, diverse income" },
+  { value: "genZ", label: "Gen Z", description: "Ages 18-27, diverse income" },
+  { value: "babyBoomers", label: "Baby Boomers", description: "Ages 60-78, diverse income" },
   { value: "techWorkers", label: "Tech Workers", description: "Software & tech professionals" },
   { value: "parentsFamilies", label: "Parents & Families", description: "Adults with children" },
   { value: "healthConscious", label: "Health Conscious", description: "Wellness-focused consumers" },
   { value: "ecoConscious", label: "Eco Conscious", description: "Sustainability-minded" },
+];
+
+// Socioeconomic level presets
+const NSE_PRESET_OPTIONS: { value: PresetName; label: string; description: string; color: string }[] = [
+  { value: "upperClass", label: "Upper Class", description: "Top 5% - Executives, owners", color: "bg-amber-500" },
+  { value: "upperMiddleClass", label: "Upper-Middle", description: "Professionals, managers", color: "bg-emerald-500" },
+  { value: "middleClass", label: "Middle Class", description: "White-collar, technicians", color: "bg-blue-500" },
+  { value: "lowerMiddleClass", label: "Lower-Middle", description: "Skilled trades, retail", color: "bg-cyan-500" },
+  { value: "workingClass", label: "Working Class", description: "Service, manual labor", color: "bg-orange-500" },
+  { value: "lowerClass", label: "Lower Class", description: "Minimum wage, informal", color: "bg-rose-500" },
+  { value: "highIncome", label: "High Income Mix", description: "Upper + Upper-middle", color: "bg-yellow-500" },
+  { value: "lowIncome", label: "Low Income Mix", description: "Working + Lower class", color: "bg-red-500" },
 ];
 
 export function PersonaBuilder({
@@ -61,16 +81,47 @@ export function PersonaBuilder({
   const [importedPersonas, setImportedPersonas] = useState<ImportedPersona[]>([]);
   const [showCalculator, setShowCalculator] = useState(false);
   const [customSampleSize, setCustomSampleSize] = useState<number | null>(null);
+  const [socioeconomicLevel, setSocioeconomicLevel] = useState<SocioeconomicLevel | undefined>(undefined);
 
   // Track source of configuration
-  const [configSource, setConfigSource] = useState<"preset" | "industry" | "custom" | "csv" | "saved">("preset");
+  const [configSource, setConfigSource] = useState<"preset" | "industry" | "custom" | "csv" | "saved" | "nse">("preset");
 
   const handlePresetSelect = (preset: PresetName) => {
     setSelectedPreset(preset);
     setSelectedIndustryTemplate(null);
     setConfigSource("preset");
+
+    const presetConfig = PERSONA_PRESETS[preset];
+    // Check if this preset has NSE configuration
+    if ("socioeconomicLevel" in presetConfig && presetConfig.socioeconomicLevel) {
+      setSocioeconomicLevel(presetConfig.socioeconomicLevel);
+    } else if ("socioeconomicDistribution" in presetConfig && presetConfig.socioeconomicDistribution) {
+      // For diverse presets, we don't set a single level
+      setSocioeconomicLevel(undefined);
+    } else {
+      setSocioeconomicLevel(undefined);
+    }
+
     onChange({
-      ...PERSONA_PRESETS[preset],
+      ...presetConfig,
+      count: sampleSize,
+    });
+  };
+
+  const handleNSEPresetSelect = (preset: PresetName) => {
+    setSelectedPreset(preset);
+    setSelectedIndustryTemplate(null);
+    setConfigSource("nse");
+
+    const presetConfig = PERSONA_PRESETS[preset];
+    if ("socioeconomicLevel" in presetConfig && presetConfig.socioeconomicLevel) {
+      setSocioeconomicLevel(presetConfig.socioeconomicLevel);
+    } else {
+      setSocioeconomicLevel(undefined);
+    }
+
+    onChange({
+      ...presetConfig,
       count: sampleSize,
     });
   };
@@ -94,6 +145,25 @@ export function PersonaBuilder({
       ...updates,
       count: sampleSize,
     });
+  };
+
+  const handleSocioeconomicChange = (level: SocioeconomicLevel | undefined) => {
+    setSocioeconomicLevel(level);
+    if (level) {
+      onChange({
+        ...value,
+        socioeconomicLevel: level,
+        socioeconomicDistribution: undefined,
+        count: sampleSize,
+      });
+    } else {
+      // Custom mode - remove NSE constraints
+      const { socioeconomicLevel: _, socioeconomicDistribution: __, ...rest } = value;
+      onChange({
+        ...rest,
+        count: sampleSize,
+      });
+    }
   };
 
   const handleCSVImport = (personas: ImportedPersona[]) => {
@@ -185,6 +255,44 @@ export function PersonaBuilder({
             </CardContent>
           </Card>
 
+          {/* Socioeconomic Level (NSE) Presets */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Layers className="h-4 w-4" />
+                Socioeconomic Level (NSE)
+              </CardTitle>
+              <CardDescription>
+                Target specific income/education levels with realistic correlations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {NSE_PRESET_OPTIONS.map((preset) => (
+                  <div
+                    key={preset.value}
+                    onClick={() => handleNSEPresetSelect(preset.value)}
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedPreset === preset.value && configSource === "nse"
+                        ? "border-[#7C3AED] bg-[#F3F0FF]"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${preset.color}`}>
+                        <Layers className="h-4 w-4 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm">{preset.label}</div>
+                        <div className="text-xs text-gray-500">{preset.description}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Industry Templates */}
           <Card>
             <CardHeader>
@@ -232,6 +340,8 @@ export function PersonaBuilder({
           <DemographicConfig
             value={value.demographics || {}}
             onChange={(demographics) => handleCustomChange({ demographics })}
+            socioeconomicLevel={socioeconomicLevel}
+            onSocioeconomicChange={handleSocioeconomicChange}
           />
           <PsychographicConfig
             value={value.psychographics || {}}
@@ -356,6 +466,21 @@ export function PersonaBuilder({
             {selectedPreset && configSource === "preset" && (
               <Badge variant="secondary">
                 Preset: {PERSONA_PRESET_OPTIONS.find((p) => p.value === selectedPreset)?.label}
+              </Badge>
+            )}
+            {selectedPreset && configSource === "nse" && (
+              <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                NSE: {NSE_PRESET_OPTIONS.find((p) => p.value === selectedPreset)?.label}
+              </Badge>
+            )}
+            {socioeconomicLevel && (
+              <Badge variant="secondary" className="bg-indigo-100 text-indigo-800">
+                {NSE_CONFIG[socioeconomicLevel].label}
+              </Badge>
+            )}
+            {value.socioeconomicDistribution && !socioeconomicLevel && (
+              <Badge variant="secondary" className="bg-violet-100 text-violet-800">
+                Diverse NSE Distribution
               </Badge>
             )}
             {selectedIndustryTemplate && configSource === "industry" && (

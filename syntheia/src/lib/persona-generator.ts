@@ -3,13 +3,251 @@
  *
  * Generates diverse synthetic personas based on demographic
  * and psychographic parameters for survey simulation.
+ *
+ * Includes socioeconomic level (NSE) system based on:
+ * - AMAI (Mexico) classification
+ * - US Census Bureau income quintiles
+ * - Realistic education/occupation correlations
  */
 
 import { SyntheticPersona } from "./ssr-engine";
 import { generateId } from "./utils";
 
+// ============================================
+// SOCIOECONOMIC LEVEL (NSE) SYSTEM
+// ============================================
+
+export type SocioeconomicLevel = "upper" | "upper-middle" | "middle" | "lower-middle" | "working" | "lower";
+
+export interface NSEProfile {
+  label: string;
+  description: string;
+  incomeRanges: string[];
+  educationWeights: Record<string, number>;
+  occupationCategories: OccupationCategory[];
+  distribution: number; // Percentage of population
+}
+
+// Extended education levels (10 levels - from no formal education to doctoral)
+export const EDUCATION_LEVELS = [
+  "No formal education",
+  "Elementary school",
+  "Some high school",
+  "High school diploma",
+  "Trade/Vocational certificate",
+  "Some college",
+  "Associate degree",
+  "Bachelor's degree",
+  "Master's degree",
+  "Doctoral/Professional degree",
+] as const;
+
+export type EducationLevel = typeof EDUCATION_LEVELS[number];
+
+// Occupation categories for NSE correlation
+export type OccupationCategory = "professional" | "whiteCollar" | "skilled" | "service" | "manual" | "unemployed";
+
+// Expanded occupations by category
+export const OCCUPATIONS_BY_CATEGORY: Record<OccupationCategory, string[]> = {
+  professional: [
+    "Doctor",
+    "Lawyer",
+    "Engineer",
+    "Architect",
+    "Executive",
+    "CEO",
+    "CFO",
+    "Investment Banker",
+    "Surgeon",
+    "Dentist",
+    "Pharmacist",
+    "Scientist",
+    "Professor",
+    "Software Architect",
+    "Data Scientist",
+  ],
+  whiteCollar: [
+    "Accountant",
+    "Teacher",
+    "Nurse",
+    "Analyst",
+    "Marketing Specialist",
+    "HR Manager",
+    "Project Manager",
+    "Software Engineer",
+    "Graphic Designer",
+    "Social Worker",
+    "Librarian",
+    "Paralegal",
+    "Insurance Agent",
+    "Real Estate Agent",
+    "Financial Advisor",
+  ],
+  skilled: [
+    "Electrician",
+    "Plumber",
+    "HVAC Technician",
+    "Carpenter",
+    "Mechanic",
+    "Welder",
+    "Machinist",
+    "Construction Supervisor",
+    "Diesel Technician",
+    "Elevator Installer",
+    "Aircraft Mechanic",
+    "Industrial Electrician",
+  ],
+  service: [
+    "Retail Worker",
+    "Restaurant Worker",
+    "Customer Service Representative",
+    "Administrative Assistant",
+    "Receptionist",
+    "Bank Teller",
+    "Hair Stylist",
+    "Bartender",
+    "Barista",
+    "Hotel Staff",
+    "Flight Attendant",
+    "Security Guard",
+    "Childcare Worker",
+    "Home Health Aide",
+  ],
+  manual: [
+    "Factory Worker",
+    "Warehouse Worker",
+    "Farm Worker",
+    "Janitor",
+    "Cleaner",
+    "Landscaper",
+    "Delivery Driver",
+    "Truck Driver",
+    "Construction Laborer",
+    "Food Processing Worker",
+    "Mover",
+    "Packer",
+    "Assembly Line Worker",
+    "Sanitation Worker",
+  ],
+  unemployed: [
+    "Unemployed (seeking work)",
+    "Unemployed (not seeking)",
+    "Part-time Worker",
+    "Gig Economy Worker",
+    "Homemaker",
+    "Disabled/Unable to work",
+    "Student",
+    "Retired",
+  ],
+};
+
+// All occupations flattened
+export const ALL_OCCUPATIONS = Object.values(OCCUPATIONS_BY_CATEGORY).flat();
+
+// NSE Configuration with realistic correlations
+// Based on US Census Bureau data and AMAI classification
+export const NSE_CONFIG: Record<SocioeconomicLevel, NSEProfile> = {
+  upper: {
+    label: "Upper Class (Top 5%)",
+    description: "Executives, business owners, high-level professionals",
+    incomeRanges: ["$200,000+", "$150,000 - $200,000"],
+    educationWeights: {
+      "Doctoral/Professional degree": 0.35,
+      "Master's degree": 0.40,
+      "Bachelor's degree": 0.25,
+    },
+    occupationCategories: ["professional"],
+    distribution: 0.05,
+  },
+  "upper-middle": {
+    label: "Upper-Middle Class",
+    description: "Professionals, managers, skilled specialists",
+    incomeRanges: ["$125,000 - $150,000", "$100,000 - $125,000"],
+    educationWeights: {
+      "Master's degree": 0.30,
+      "Bachelor's degree": 0.50,
+      "Associate degree": 0.15,
+      "Trade/Vocational certificate": 0.05,
+    },
+    occupationCategories: ["professional", "whiteCollar"],
+    distribution: 0.15,
+  },
+  middle: {
+    label: "Middle Class",
+    description: "White-collar workers, technicians, small business owners",
+    incomeRanges: ["$75,000 - $100,000", "$60,000 - $75,000"],
+    educationWeights: {
+      "Bachelor's degree": 0.30,
+      "Associate degree": 0.25,
+      "Some college": 0.25,
+      "Trade/Vocational certificate": 0.15,
+      "High school diploma": 0.05,
+    },
+    occupationCategories: ["whiteCollar", "skilled"],
+    distribution: 0.20,
+  },
+  "lower-middle": {
+    label: "Lower-Middle Class",
+    description: "Skilled trades, service industry, retail management",
+    incomeRanges: ["$50,000 - $60,000", "$40,000 - $50,000"],
+    educationWeights: {
+      "High school diploma": 0.35,
+      "Some college": 0.25,
+      "Trade/Vocational certificate": 0.25,
+      "Associate degree": 0.10,
+      "Some high school": 0.05,
+    },
+    occupationCategories: ["skilled", "service"],
+    distribution: 0.25,
+  },
+  working: {
+    label: "Working Class",
+    description: "Service workers, manual laborers, entry-level positions",
+    incomeRanges: ["$35,000 - $40,000", "$25,000 - $35,000"],
+    educationWeights: {
+      "High school diploma": 0.40,
+      "Some high school": 0.30,
+      "Elementary school": 0.15,
+      "Trade/Vocational certificate": 0.10,
+      "Some college": 0.05,
+    },
+    occupationCategories: ["service", "manual"],
+    distribution: 0.20,
+  },
+  lower: {
+    label: "Lower Class",
+    description: "Minimum wage workers, unemployed, informal economy",
+    incomeRanges: ["Under $25,000", "$15,000 - $25,000"],
+    educationWeights: {
+      "Some high school": 0.30,
+      "High school diploma": 0.25,
+      "Elementary school": 0.25,
+      "No formal education": 0.15,
+      "Trade/Vocational certificate": 0.05,
+    },
+    occupationCategories: ["manual", "unemployed"],
+    distribution: 0.15,
+  },
+};
+
+// NSE distribution for "diverse population" preset
+export const DIVERSE_POPULATION_NSE: Record<SocioeconomicLevel, number> = {
+  upper: 0.05,
+  "upper-middle": 0.15,
+  middle: 0.20,
+  "lower-middle": 0.25,
+  working: 0.20,
+  lower: 0.15,
+};
+
+// ============================================
+// PERSONA CONFIG INTERFACE
+// ============================================
+
 export interface PersonaConfig {
   count?: number;
+  socioeconomicLevel?: SocioeconomicLevel;
+  socioeconomicDistribution?: Partial<Record<SocioeconomicLevel, number>>;
   demographics?: {
     ageRange?: { min: number; max: number };
     genderDistribution?: { male: number; female: number; nonBinary: number };
@@ -60,36 +298,10 @@ const DEFAULT_CONFIG: PersonaConfig = {
       "Atlanta, GA",
     ],
     incomeDistribution: { low: 0.30, medium: 0.45, high: 0.25 },
-    educationLevels: [
-      "High school diploma",
-      "Some college",
-      "Associate degree",
-      "Bachelor's degree",
-      "Master's degree",
-      "Doctoral degree",
-    ],
-    occupations: [
-      "Software Engineer",
-      "Teacher",
-      "Nurse",
-      "Sales Representative",
-      "Manager",
-      "Administrative Assistant",
-      "Accountant",
-      "Customer Service Representative",
-      "Marketing Specialist",
-      "Engineer",
-      "Retail Worker",
-      "Healthcare Worker",
-      "Construction Worker",
-      "Restaurant Worker",
-      "Consultant",
-      "Analyst",
-      "Student",
-      "Retired",
-      "Self-employed",
-      "Freelancer",
-    ],
+    // Updated to include all education levels with realistic distribution
+    educationLevels: [...EDUCATION_LEVELS],
+    // Updated to include diverse occupations
+    occupations: ALL_OCCUPATIONS.slice(0, 30), // First 30 for diversity
   },
   psychographics: {
     values: [
@@ -199,6 +411,101 @@ function getIncomeLevel(level: string): string {
   return randomFromArray(levels[level] || levels.medium);
 }
 
+/**
+ * Select education level based on weighted distribution
+ */
+function selectEducationByWeights(weights: Record<string, number>): string {
+  return weightedRandom(weights);
+}
+
+/**
+ * Select occupation from allowed categories
+ */
+function selectOccupationByCategories(categories: OccupationCategory[]): string {
+  const category = randomFromArray(categories);
+  return randomFromArray(OCCUPATIONS_BY_CATEGORY[category]);
+}
+
+/**
+ * Select NSE level based on distribution weights
+ */
+function selectNSELevel(distribution: Partial<Record<SocioeconomicLevel, number>>): SocioeconomicLevel {
+  // Normalize the distribution
+  const total = Object.values(distribution).reduce((a, b) => a + (b || 0), 0);
+  const normalized: Record<string, number> = {};
+
+  for (const [level, weight] of Object.entries(distribution)) {
+    if (weight) {
+      normalized[level] = weight / total;
+    }
+  }
+
+  return weightedRandom(normalized) as SocioeconomicLevel;
+}
+
+/**
+ * Generate a persona based on NSE level
+ */
+function generatePersonaByNSE(
+  nseLevel: SocioeconomicLevel,
+  config: PersonaConfig = {}
+): SyntheticPersona {
+  const nseProfile = NSE_CONFIG[nseLevel];
+  const defaultDemo = DEFAULT_CONFIG.demographics!;
+  const defaultPsych = DEFAULT_CONFIG.psychographics!;
+
+  const demographics = {
+    ...defaultDemo,
+    ...config.demographics,
+  };
+
+  const psychographics = {
+    ...defaultPsych,
+    ...config.psychographics,
+  };
+
+  const context = config.context;
+
+  // Select education based on NSE weights
+  const education = selectEducationByWeights(nseProfile.educationWeights);
+
+  // Select income from NSE range
+  const income = randomFromArray(nseProfile.incomeRanges);
+
+  // Select occupation from NSE-appropriate categories
+  const occupation = selectOccupationByCategories(nseProfile.occupationCategories);
+
+  return {
+    id: generateId(),
+    demographics: {
+      age: randomInRange(
+        demographics.ageRange?.min || 18,
+        demographics.ageRange?.max || 75
+      ),
+      gender: getGender(demographics.genderDistribution),
+      location: randomFromArray(demographics.locations || ["New York, NY"]),
+      income,
+      education,
+      occupation,
+    },
+    psychographics: {
+      values: randomSubset(psychographics?.values || [], 3),
+      lifestyle: randomFromArray(psychographics?.lifestyles || ["Active and health-conscious"]),
+      interests: randomSubset(psychographics?.interests || [], 4),
+      personality: randomFromArray(psychographics?.personalities || ["Analytical and detail-oriented"]),
+    },
+    context: {
+      industry: context?.industry,
+      productExperience: context?.productExperience
+        ? randomFromArray(context.productExperience)
+        : undefined,
+      brandAffinity: context?.brandAffinities
+        ? randomSubset(context.brandAffinities, 2)
+        : undefined,
+    },
+  };
+}
+
 function getGender(
   distribution?: { male: number; female: number; nonBinary: number }
 ): SyntheticPersona["demographics"]["gender"] {
@@ -216,6 +523,18 @@ function getGender(
 export function generatePersona(
   config: PersonaConfig = {}
 ): SyntheticPersona {
+  // If NSE level is specified, use NSE-based generation
+  if (config.socioeconomicLevel) {
+    return generatePersonaByNSE(config.socioeconomicLevel, config);
+  }
+
+  // If NSE distribution is specified, select a level and generate
+  if (config.socioeconomicDistribution) {
+    const nseLevel = selectNSELevel(config.socioeconomicDistribution);
+    return generatePersonaByNSE(nseLevel, config);
+  }
+
+  // Legacy generation without NSE
   const defaultDemo = DEFAULT_CONFIG.demographics!;
   const defaultPsych = DEFAULT_CONFIG.psychographics!;
 
@@ -275,8 +594,45 @@ export function generatePanel(
 export const PERSONA_PRESETS = {
   generalPopulation: DEFAULT_CONFIG,
 
+  // NSE-based presets for socioeconomic diversity
+  diversePopulation: {
+    ...DEFAULT_CONFIG,
+    socioeconomicDistribution: DIVERSE_POPULATION_NSE,
+  },
+
+  upperClass: {
+    ...DEFAULT_CONFIG,
+    socioeconomicLevel: "upper" as SocioeconomicLevel,
+  },
+
+  upperMiddleClass: {
+    ...DEFAULT_CONFIG,
+    socioeconomicLevel: "upper-middle" as SocioeconomicLevel,
+  },
+
+  middleClass: {
+    ...DEFAULT_CONFIG,
+    socioeconomicLevel: "middle" as SocioeconomicLevel,
+  },
+
+  lowerMiddleClass: {
+    ...DEFAULT_CONFIG,
+    socioeconomicLevel: "lower-middle" as SocioeconomicLevel,
+  },
+
+  workingClass: {
+    ...DEFAULT_CONFIG,
+    socioeconomicLevel: "working" as SocioeconomicLevel,
+  },
+
+  lowerClass: {
+    ...DEFAULT_CONFIG,
+    socioeconomicLevel: "lower" as SocioeconomicLevel,
+  },
+
   millennials: {
     ...DEFAULT_CONFIG,
+    socioeconomicDistribution: DIVERSE_POPULATION_NSE,
     demographics: {
       ...DEFAULT_CONFIG.demographics,
       ageRange: { min: 28, max: 43 },
@@ -285,6 +641,7 @@ export const PERSONA_PRESETS = {
 
   genZ: {
     ...DEFAULT_CONFIG,
+    socioeconomicDistribution: DIVERSE_POPULATION_NSE,
     demographics: {
       ...DEFAULT_CONFIG.demographics,
       ageRange: { min: 18, max: 27 },
@@ -293,6 +650,7 @@ export const PERSONA_PRESETS = {
 
   babyBoomers: {
     ...DEFAULT_CONFIG,
+    socioeconomicDistribution: DIVERSE_POPULATION_NSE,
     demographics: {
       ...DEFAULT_CONFIG.demographics,
       ageRange: { min: 60, max: 78 },
@@ -301,14 +659,30 @@ export const PERSONA_PRESETS = {
 
   highIncome: {
     ...DEFAULT_CONFIG,
-    demographics: {
-      ...DEFAULT_CONFIG.demographics,
-      incomeDistribution: { low: 0.05, medium: 0.25, high: 0.70 },
+    socioeconomicDistribution: {
+      upper: 0.40,
+      "upper-middle": 0.40,
+      middle: 0.20,
+    },
+  },
+
+  lowIncome: {
+    ...DEFAULT_CONFIG,
+    socioeconomicDistribution: {
+      working: 0.40,
+      lower: 0.40,
+      "lower-middle": 0.20,
     },
   },
 
   techWorkers: {
     ...DEFAULT_CONFIG,
+    socioeconomicDistribution: {
+      upper: 0.15,
+      "upper-middle": 0.45,
+      middle: 0.35,
+      "lower-middle": 0.05,
+    },
     demographics: {
       ...DEFAULT_CONFIG.demographics,
       ageRange: { min: 22, max: 45 },
@@ -323,6 +697,7 @@ export const PERSONA_PRESETS = {
         "Engineering Manager",
         "CTO",
         "Startup Founder",
+        "Software Architect",
       ],
       locations: [
         "San Francisco, CA",
@@ -341,6 +716,7 @@ export const PERSONA_PRESETS = {
 
   parentsFamilies: {
     ...DEFAULT_CONFIG,
+    socioeconomicDistribution: DIVERSE_POPULATION_NSE,
     demographics: {
       ...DEFAULT_CONFIG.demographics,
       ageRange: { min: 28, max: 55 },
@@ -369,6 +745,13 @@ export const PERSONA_PRESETS = {
 
   healthConscious: {
     ...DEFAULT_CONFIG,
+    socioeconomicDistribution: {
+      upper: 0.10,
+      "upper-middle": 0.25,
+      middle: 0.35,
+      "lower-middle": 0.20,
+      working: 0.10,
+    },
     psychographics: {
       ...DEFAULT_CONFIG.psychographics,
       values: [
@@ -404,6 +787,13 @@ export const PERSONA_PRESETS = {
 
   ecoConscious: {
     ...DEFAULT_CONFIG,
+    socioeconomicDistribution: {
+      upper: 0.08,
+      "upper-middle": 0.25,
+      middle: 0.35,
+      "lower-middle": 0.22,
+      working: 0.10,
+    },
     psychographics: {
       ...DEFAULT_CONFIG.psychographics,
       values: [
