@@ -1,4 +1,4 @@
-# Syntheia Roadmap
+# Arquetype Roadmap
 
 ## Completed Sprints
 
@@ -72,6 +72,11 @@
 - [x] Persona templates by industry
 - [x] Save and reuse persona panels
 - [x] Sample size calculator (confidence level, margin of error, population size)
+- [x] Socioeconomic Level (NSE) system with 6 levels (AMAI/Census-based)
+- [x] Expanded education levels (10 levels: no formal education to doctoral)
+- [x] Expanded occupations (70+ by category: professional, skilled, manual, etc.)
+- [x] Realistic correlations between income, education, and occupation
+- [x] NSE presets for targeting specific socioeconomic segments
 
 #### Advanced Question Types
 - [x] Matrix questions
@@ -84,6 +89,7 @@
 - [x] Role-based permissions
 - [x] Study sharing and commenting
 - [x] Activity log
+- [x] Settings dashboard with user profile management
 
 ### Low Priority
 
@@ -94,9 +100,9 @@
 - [ ] Google Sheets export
 
 #### Analytics Dashboard
-- [ ] Organization-wide analytics
-- [ ] Credit usage tracking
-- [ ] API usage metrics
+- [x] Organization-wide analytics
+- [x] Credit usage tracking
+- [x] API usage metrics
 - [ ] Performance benchmarks
 
 ---
@@ -152,6 +158,6 @@
 ## Notes
 
 - Current rate limit: 40 requests/minute to Anthropic API
-- Sequential processing used to avoid rate limits
-- Consider upgrading Anthropic tier for parallel processing
+- **Parallel processing implemented**: 4 personas processed in parallel with rate limit management
+- 30-minute timeout configured for large simulations (400+ personas)
 - **SQLite is perfect for development; migrate to Supabase/PostgreSQL for production**
