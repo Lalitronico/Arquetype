@@ -2,32 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import {
   studies,
-  organizationMembers,
   organizations,
   syntheticRespondents,
   responses,
 } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { getSSREngine, SurveyQuestion, ProductContext } from "@/lib/ssr-engine";
 import { generatePanel, PERSONA_PRESETS, PresetName } from "@/lib/persona-generator";
 import { logStudyStarted, logActivity } from "@/lib/activity-logger";
-
-async function getSession() {
-  const headersList = await headers();
-  return auth.api.getSession({ headers: headersList });
-}
-
-async function getUserOrganization(userId: string) {
-  const membership = await db
-    .select()
-    .from(organizationMembers)
-    .where(eq(organizationMembers.userId, userId))
-    .limit(1);
-
-  return membership[0]?.organizationId;
-}
+import { requireSessionWithOrg } from "@/lib/api-helpers";
+import { appCache } from "@/lib/cache";
 
 async function verifyStudyAccess(studyId: string, organizationId: string) {
   const [study] = await db
@@ -44,21 +28,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSession();
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    const organizationId = await getUserOrganization(session.user.id);
-    if (!organizationId) {
-      return NextResponse.json(
-        { success: false, error: "No organization found" },
-        { status: 404 }
-      );
-    }
+    const { session, organizationId, error } = await requireSessionWithOrg();
+    if (error) return error;
 
     const { id: studyId } = await params;
     const study = await verifyStudyAccess(studyId, organizationId);
@@ -203,39 +174,45 @@ export async function POST(
       });
     }
 
-    // Save respondents and responses to database
+    // Save respondents and responses to database (batch inserts)
     const now = new Date().toISOString();
 
-    for (let i = 0; i < simulationResults.length; i++) {
-      const result = simulationResults[i];
-      const persona = panel[i];
-      const respondentId = crypto.randomUUID();
+    // Collect all respondent rows
+    const allRespondentRows = simulationResults.map((_, i) => ({
+      id: crypto.randomUUID(),
+      studyId,
+      personaData: JSON.stringify(panel[i]),
+      createdAt: now,
+    }));
 
-      // Save respondent
-      await db.insert(syntheticRespondents).values({
-        id: respondentId,
+    // Batch insert all respondents
+    if (allRespondentRows.length > 0) {
+      await db.insert(syntheticRespondents).values(allRespondentRows);
+    }
+
+    // Collect all response rows
+    const allResponseRows = simulationResults.flatMap((result, i) =>
+      result.responses.map((response) => ({
+        id: crypto.randomUUID(),
         studyId,
-        personaData: JSON.stringify(persona),
+        respondentId: allRespondentRows[i].id,
+        questionId: response.questionId,
+        rating: response.rating || null,
+        textResponse: response.rawTextResponse || null,
+        explanation: response.explanation,
+        confidence: response.confidence,
+        distribution: response.distribution
+          ? JSON.stringify(response.distribution)
+          : null,
         createdAt: now,
-      });
+      }))
+    );
 
-      // Save responses
-      for (const response of result.responses) {
-        await db.insert(responses).values({
-          id: crypto.randomUUID(),
-          studyId,
-          respondentId,
-          questionId: response.questionId,
-          rating: response.rating || null,
-          textResponse: response.rawTextResponse || null,
-          explanation: response.explanation,
-          confidence: response.confidence,
-          distribution: response.distribution
-            ? JSON.stringify(response.distribution)
-            : null,
-          createdAt: now,
-        });
-      }
+    // Insert responses in chunks of 100 (SQLite variable limit ~999)
+    const CHUNK_SIZE = 100;
+    for (let i = 0; i < allResponseRows.length; i += CHUNK_SIZE) {
+      const chunk = allResponseRows.slice(i, i + CHUNK_SIZE);
+      await db.insert(responses).values(chunk);
     }
 
     // Update study status and credits
@@ -257,6 +234,9 @@ export async function POST(
         updatedAt: now,
       })
       .where(eq(organizations.id, organizationId));
+
+    // Invalidate org cache after credit deduction
+    appCache.invalidatePrefix("org:");
 
     // Log completion
     await logActivity({

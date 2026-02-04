@@ -122,39 +122,45 @@ async function handlePost(
       surveyQuestions
     );
 
-    // Save respondents and responses to database
+    // Save respondents and responses to database (batch inserts)
     const now = new Date().toISOString();
 
-    for (let i = 0; i < simulationResults.length; i++) {
-      const result = simulationResults[i];
-      const persona = panel[i];
-      const respondentId = crypto.randomUUID();
+    // Collect all respondent rows
+    const allRespondentRows = simulationResults.map((_, i) => ({
+      id: crypto.randomUUID(),
+      studyId,
+      personaData: JSON.stringify(panel[i]),
+      createdAt: now,
+    }));
 
-      // Save respondent
-      await db.insert(syntheticRespondents).values({
-        id: respondentId,
+    // Batch insert all respondents
+    if (allRespondentRows.length > 0) {
+      await db.insert(syntheticRespondents).values(allRespondentRows);
+    }
+
+    // Collect all response rows
+    const allResponseRows = simulationResults.flatMap((result, i) =>
+      result.responses.map((response) => ({
+        id: crypto.randomUUID(),
         studyId,
-        personaData: JSON.stringify(persona),
+        respondentId: allRespondentRows[i].id,
+        questionId: response.questionId,
+        rating: response.rating || null,
+        textResponse: response.rawTextResponse || null,
+        explanation: response.explanation,
+        confidence: response.confidence,
+        distribution: response.distribution
+          ? JSON.stringify(response.distribution)
+          : null,
         createdAt: now,
-      });
+      }))
+    );
 
-      // Save responses
-      for (const response of result.responses) {
-        await db.insert(responses).values({
-          id: crypto.randomUUID(),
-          studyId,
-          respondentId,
-          questionId: response.questionId,
-          rating: response.rating || null,
-          textResponse: response.rawTextResponse || null,
-          explanation: response.explanation,
-          confidence: response.confidence,
-          distribution: response.distribution
-            ? JSON.stringify(response.distribution)
-            : null,
-          createdAt: now,
-        });
-      }
+    // Insert responses in chunks of 100 (SQLite variable limit ~999)
+    const CHUNK_SIZE = 100;
+    for (let i = 0; i < allResponseRows.length; i += CHUNK_SIZE) {
+      const chunk = allResponseRows.slice(i, i + CHUNK_SIZE);
+      await db.insert(responses).values(chunk);
     }
 
     // Update study as completed and deduct credits

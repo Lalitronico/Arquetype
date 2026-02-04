@@ -1,28 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import {
   listApiKeys,
   createApiKey,
-  getOrganizationForUser,
 } from "@/lib/api-keys";
 import { logActivity } from "@/lib/activity-logger";
+import { CreateApiKeySchema } from "@/lib/validations";
+import { validateBody } from "@/lib/validation-helpers";
+import { requireSessionWithOrg } from "@/lib/api-helpers";
 
 // GET /api/api-keys - List all API keys for the organization
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const organizationId = await getOrganizationForUser(session.user.id);
-    if (!organizationId) {
-      return NextResponse.json({ error: "No organization found" }, { status: 404 });
-    }
+    const { organizationId, error } = await requireSessionWithOrg();
+    if (error) return error;
 
     const keys = await listApiKeys(organizationId);
 
@@ -39,33 +29,24 @@ export async function GET(request: NextRequest) {
 // POST /api/api-keys - Create a new API key
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const organizationId = await getOrganizationForUser(session.user.id);
-    if (!organizationId) {
-      return NextResponse.json({ error: "No organization found" }, { status: 404 });
-    }
+    const { session, organizationId, error } = await requireSessionWithOrg();
+    if (error) return error;
 
     const body = await request.json();
-    const { name, scopes, expiresAt } = body;
-
-    if (!name || typeof name !== "string" || name.trim().length === 0) {
+    const validated = validateBody(CreateApiKeySchema, body);
+    if (!validated.success) {
       return NextResponse.json(
-        { error: "Name is required" },
+        { error: validated.error, details: validated.details },
         { status: 400 }
       );
     }
 
+    const { name, scopes, expiresAt } = validated.data;
+
     const result = await createApiKey(
       organizationId,
-      name.trim(),
-      scopes || ["read", "write"],
+      name,
+      scopes,
       expiresAt
     );
 
@@ -76,7 +57,7 @@ export async function POST(request: NextRequest) {
       action: "api_key_created",
       resourceType: "api_key",
       resourceId: result.id,
-      metadata: { keyName: name.trim() },
+      metadata: { keyName: name },
     });
 
     return NextResponse.json({

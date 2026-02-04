@@ -1,24 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { studies, organizationMembers, responses, syntheticRespondents } from "@/db/schema";
+import { studies, responses } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-
-async function getSession() {
-  const headersList = await headers();
-  return auth.api.getSession({ headers: headersList });
-}
-
-async function getUserOrganization(userId: string) {
-  const membership = await db
-    .select()
-    .from(organizationMembers)
-    .where(eq(organizationMembers.userId, userId))
-    .limit(1);
-
-  return membership[0]?.organizationId;
-}
+import { requireSessionWithOrg } from "@/lib/api-helpers";
 
 interface QuestionStats {
   questionId: string;
@@ -42,21 +26,8 @@ interface StudyComparison {
 // GET /api/studies/compare?ids=id1,id2,id3 - Compare multiple studies
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    const organizationId = await getUserOrganization(session.user.id);
-    if (!organizationId) {
-      return NextResponse.json(
-        { success: false, error: "No organization found" },
-        { status: 404 }
-      );
-    }
+    const { organizationId, error } = await requireSessionWithOrg();
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const studyIds = searchParams.get("ids")?.split(",").filter(Boolean) || [];
@@ -94,14 +65,25 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch responses for each study
+    // Fetch all responses in a single query (fixes N+1)
+    const allStudyIds = studyList.map((s) => s.id);
+    const allResponses = await db
+      .select()
+      .from(responses)
+      .where(inArray(responses.studyId, allStudyIds));
+
+    // Group responses by studyId
+    const responsesByStudy = new Map<string, typeof allResponses>();
+    for (const resp of allResponses) {
+      const arr = responsesByStudy.get(resp.studyId) || [];
+      arr.push(resp);
+      responsesByStudy.set(resp.studyId, arr);
+    }
+
     const comparisons: StudyComparison[] = [];
 
     for (const study of studyList) {
-      const studyResponses = await db
-        .select()
-        .from(responses)
-        .where(eq(responses.studyId, study.id));
+      const studyResponses = responsesByStudy.get(study.id) || [];
 
       const questions = JSON.parse(study.questions) as Array<{
         id: string;

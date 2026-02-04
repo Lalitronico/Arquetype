@@ -1,37 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { db } from "@/db";
-import { panelConfigs, organizationMembers } from "@/db/schema";
+import { panelConfigs } from "@/db/schema";
 import { eq, and, or, like, desc } from "drizzle-orm";
 import { generateId } from "@/lib/utils";
-
-// Helper to get organization for user
-async function getOrganizationForUser(userId: string): Promise<string | null> {
-  const membership = await db
-    .select({ organizationId: organizationMembers.organizationId })
-    .from(organizationMembers)
-    .where(eq(organizationMembers.userId, userId))
-    .limit(1);
-
-  return membership[0]?.organizationId || null;
-}
+import { CreatePanelConfigSchema } from "@/lib/validations";
+import { validateBody } from "@/lib/validation-helpers";
+import { requireSessionWithOrg } from "@/lib/api-helpers";
+import { appCache, TEMPLATES_TTL } from "@/lib/cache";
 
 // GET /api/panel-configs - List all panel configs for the organization
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const organizationId = await getOrganizationForUser(session.user.id);
-    if (!organizationId) {
-      return NextResponse.json({ error: "No organization found" }, { status: 404 });
-    }
+    const { organizationId, error } = await requireSessionWithOrg();
+    if (error) return error;
 
     // Get query params
     const { searchParams } = new URL(request.url);
@@ -51,23 +32,22 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(panelConfigs.industry, industry));
     }
 
+    // Apply search filter at SQL level instead of in memory
+    if (search) {
+      conditions.push(
+        or(
+          like(panelConfigs.name, `%${search}%`),
+          like(panelConfigs.description, `%${search}%`)
+        )!
+      );
+    }
+
     // Get configs for this organization + public templates
-    let configs = await db
+    const configs = await db
       .select()
       .from(panelConfigs)
       .where(and(...conditions))
       .orderBy(desc(panelConfigs.updatedAt));
-
-    // Apply search filter in memory (for name search)
-    if (search) {
-      const searchLower = search.toLowerCase();
-      configs = configs.filter(
-        (config) =>
-          config.name.toLowerCase().includes(searchLower) ||
-          (config.description &&
-            config.description.toLowerCase().includes(searchLower))
-      );
-    }
 
     // Parse the JSON config field
     const parsedConfigs = configs.map((config) => ({
@@ -88,50 +68,37 @@ export async function GET(request: NextRequest) {
 // POST /api/panel-configs - Create a new panel config
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const organizationId = await getOrganizationForUser(session.user.id);
-    if (!organizationId) {
-      return NextResponse.json({ error: "No organization found" }, { status: 404 });
-    }
+    const { organizationId, error } = await requireSessionWithOrg();
+    if (error) return error;
 
     const body = await request.json();
-    const { name, description, config, industry, isTemplate } = body;
-
-    if (!name || typeof name !== "string" || name.trim().length === 0) {
+    const validated = validateBody(CreatePanelConfigSchema, body);
+    if (!validated.success) {
       return NextResponse.json(
-        { error: "Name is required" },
+        { error: validated.error, details: validated.details },
         { status: 400 }
       );
     }
 
-    if (!config || typeof config !== "object") {
-      return NextResponse.json(
-        { error: "Config is required" },
-        { status: 400 }
-      );
-    }
+    const { name, description, config, industry, isTemplate } = validated.data;
 
     const now = new Date().toISOString();
     const newConfig = {
       id: generateId(),
       organizationId,
-      name: name.trim(),
-      description: description?.trim() || null,
+      name,
+      description,
       config: JSON.stringify(config),
-      industry: industry?.trim() || null,
-      isTemplate: isTemplate || false,
+      industry,
+      isTemplate,
       createdAt: now,
       updatedAt: now,
     };
 
     await db.insert(panelConfigs).values(newConfig);
+
+    // Invalidate templates cache on mutation
+    appCache.invalidatePrefix("templates:");
 
     return NextResponse.json({
       data: {

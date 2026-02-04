@@ -3,6 +3,8 @@ import { withApiKey, ApiContext, hasScope } from "@/lib/api-middleware";
 import { db } from "@/db";
 import { studies } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { V1UpdateStudySchema } from "@/lib/validations";
+import { validateBody } from "@/lib/validation-helpers";
 
 // GET /api/v1/studies/:id - Get study details
 async function handleGet(
@@ -95,7 +97,15 @@ async function handlePatch(
 
   try {
     const body = await request.json();
-    const { name, description, questions, panelConfig, sampleSize } = body;
+    const validated = validateBody(V1UpdateStudySchema, body);
+    if (!validated.success) {
+      return NextResponse.json(
+        { error: validated.error, details: validated.details },
+        { status: 400 }
+      );
+    }
+
+    const { name, description, questions, panelConfig, sampleSize } = validated.data;
 
     const updates: Record<string, unknown> = {
       updatedAt: new Date().toISOString(),
@@ -104,7 +114,7 @@ async function handlePatch(
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
     if (questions !== undefined) updates.questions = JSON.stringify(questions);
-    if (panelConfig !== undefined) updates.panelConfig = JSON.stringify(panelConfig);
+    if (panelConfig !== undefined) updates.panelConfig = panelConfig ? JSON.stringify(panelConfig) : null;
     if (sampleSize !== undefined) updates.sampleSize = sampleSize;
 
     await db

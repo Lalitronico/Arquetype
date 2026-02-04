@@ -3,6 +3,8 @@ import { getServerSession } from "@/lib/auth-server";
 import { db } from "@/db";
 import { users, accounts } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { UpdateUserSchema } from "@/lib/validations";
+import { validateBody } from "@/lib/validation-helpers";
 
 // GET /api/user - Get current user profile
 export async function GET() {
@@ -75,43 +77,26 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, image } = body;
+    const validated = validateBody(UpdateUserSchema, body);
+    if (!validated.success) {
+      return NextResponse.json(
+        { success: false, error: validated.error, details: validated.details },
+        { status: 400 }
+      );
+    }
+
+    const { name, image } = validated.data;
 
     // Build update object with only provided fields
-    const updateData: { name?: string; image?: string; updatedAt: string } = {
+    const updateData: { name?: string; image?: string | null; updatedAt: string } = {
       updatedAt: new Date().toISOString(),
     };
 
     if (name !== undefined) {
-      if (typeof name !== "string" || name.trim().length === 0) {
-        return NextResponse.json(
-          { success: false, error: "Name must be a non-empty string" },
-          { status: 400 }
-        );
-      }
-      if (name.length > 100) {
-        return NextResponse.json(
-          { success: false, error: "Name must be 100 characters or less" },
-          { status: 400 }
-        );
-      }
-      updateData.name = name.trim();
+      updateData.name = name;
     }
 
     if (image !== undefined) {
-      if (image !== null && typeof image !== "string") {
-        return NextResponse.json(
-          { success: false, error: "Image must be a string URL or null" },
-          { status: 400 }
-        );
-      }
-      // Basic URL validation for image
-      if (image && !image.startsWith("http://") && !image.startsWith("https://") && !image.startsWith("data:")) {
-        return NextResponse.json(
-          { success: false, error: "Image must be a valid URL" },
-          { status: 400 }
-        );
-      }
       updateData.image = image;
     }
 

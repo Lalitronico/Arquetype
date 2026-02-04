@@ -1,20 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { db } from "@/db";
-import { panelConfigs, organizationMembers } from "@/db/schema";
+import { panelConfigs } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-
-// Helper to get organization for user
-async function getOrganizationForUser(userId: string): Promise<string | null> {
-  const membership = await db
-    .select({ organizationId: organizationMembers.organizationId })
-    .from(organizationMembers)
-    .where(eq(organizationMembers.userId, userId))
-    .limit(1);
-
-  return membership[0]?.organizationId || null;
-}
+import { UpdatePanelConfigSchema } from "@/lib/validations";
+import { validateBody } from "@/lib/validation-helpers";
+import { requireSessionWithOrg } from "@/lib/api-helpers";
+import { appCache } from "@/lib/cache";
 
 // GET /api/panel-configs/[id] - Get a specific panel config
 export async function GET(
@@ -23,19 +14,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const organizationId = await getOrganizationForUser(session.user.id);
-    if (!organizationId) {
-      return NextResponse.json({ error: "No organization found" }, { status: 404 });
-    }
+    const { organizationId, error } = await requireSessionWithOrg();
+    if (error) return error;
 
     const config = await db
       .select()
@@ -74,19 +54,8 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const organizationId = await getOrganizationForUser(session.user.id);
-    if (!organizationId) {
-      return NextResponse.json({ error: "No organization found" }, { status: 404 });
-    }
+    const { organizationId, error } = await requireSessionWithOrg();
+    if (error) return error;
 
     // Get existing config
     const existing = await db
@@ -110,44 +79,43 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, description, config, industry } = body;
+    const validated = validateBody(UpdatePanelConfigSchema, body);
+    if (!validated.success) {
+      return NextResponse.json(
+        { error: validated.error, details: validated.details },
+        { status: 400 }
+      );
+    }
+
+    const { name, description, config, industry } = validated.data;
 
     const updates: Record<string, unknown> = {
       updatedAt: new Date().toISOString(),
     };
 
     if (name !== undefined) {
-      if (typeof name !== "string" || name.trim().length === 0) {
-        return NextResponse.json(
-          { error: "Name cannot be empty" },
-          { status: 400 }
-        );
-      }
-      updates.name = name.trim();
+      updates.name = name;
     }
 
     if (description !== undefined) {
-      updates.description = description?.trim() || null;
+      updates.description = description;
     }
 
     if (config !== undefined) {
-      if (typeof config !== "object") {
-        return NextResponse.json(
-          { error: "Config must be an object" },
-          { status: 400 }
-        );
-      }
       updates.config = JSON.stringify(config);
     }
 
     if (industry !== undefined) {
-      updates.industry = industry?.trim() || null;
+      updates.industry = industry;
     }
 
     await db
       .update(panelConfigs)
       .set(updates)
       .where(eq(panelConfigs.id, id));
+
+    // Invalidate templates cache on mutation
+    appCache.invalidatePrefix("templates:");
 
     // Get updated config
     const updated = await db
@@ -179,19 +147,8 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const organizationId = await getOrganizationForUser(session.user.id);
-    if (!organizationId) {
-      return NextResponse.json({ error: "No organization found" }, { status: 404 });
-    }
+    const { organizationId, error } = await requireSessionWithOrg();
+    if (error) return error;
 
     // Get existing config
     const existing = await db
@@ -215,6 +172,9 @@ export async function DELETE(
     }
 
     await db.delete(panelConfigs).where(eq(panelConfigs.id, id));
+
+    // Invalidate templates cache on mutation
+    appCache.invalidatePrefix("templates:");
 
     return NextResponse.json({ message: "Panel configuration deleted" });
   } catch (error) {

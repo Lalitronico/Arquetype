@@ -3,6 +3,8 @@ import { withApiKey, ApiContext, hasScope } from "@/lib/api-middleware";
 import { db } from "@/db";
 import { studies } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { V1CreateStudySchema } from "@/lib/validations";
+import { validateBody } from "@/lib/validation-helpers";
 
 // GET /api/v1/studies - List all studies
 async function handleGet(
@@ -70,38 +72,15 @@ async function handlePost(
 
   try {
     const body = await request.json();
-    const { name, description, questions, panelConfig, sampleSize } = body;
-
-    // Validation
-    if (!name || typeof name !== "string") {
+    const validated = validateBody(V1CreateStudySchema, body);
+    if (!validated.success) {
       return NextResponse.json(
-        { error: "name is required and must be a string" },
+        { error: validated.error, details: validated.details },
         { status: 400 }
       );
     }
 
-    if (!questions || !Array.isArray(questions) || questions.length === 0) {
-      return NextResponse.json(
-        { error: "questions is required and must be a non-empty array" },
-        { status: 400 }
-      );
-    }
-
-    // Validate each question
-    for (const q of questions) {
-      if (!q.id || !q.text || !q.type) {
-        return NextResponse.json(
-          { error: "Each question must have id, text, and type" },
-          { status: 400 }
-        );
-      }
-      if (!["rating", "open", "multiple_choice"].includes(q.type)) {
-        return NextResponse.json(
-          { error: `Invalid question type: ${q.type}. Valid types: rating, open, multiple_choice` },
-          { status: 400 }
-        );
-      }
-    }
+    const { name, description, questions, panelConfig, sampleSize } = validated.data;
 
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
@@ -109,12 +88,12 @@ async function handlePost(
     await db.insert(studies).values({
       id,
       organizationId: context.organizationId,
-      createdById: context.apiKeyId, // Use API key ID as creator for API-created studies
+      createdById: context.apiKeyId,
       name,
       description: description || null,
       questions: JSON.stringify(questions),
       panelConfig: panelConfig ? JSON.stringify(panelConfig) : null,
-      sampleSize: sampleSize || 100,
+      sampleSize,
       status: "draft",
       createdAt: now,
       updatedAt: now,
@@ -126,7 +105,7 @@ async function handlePost(
         name,
         description,
         status: "draft",
-        sampleSize: sampleSize || 100,
+        sampleSize,
         createdAt: now,
         message: "Study created successfully",
       },
