@@ -24,6 +24,11 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+nul
+
+# Claude Code
+.agents/
+.claude/
 
 # Debug
 npm-debug.log*
