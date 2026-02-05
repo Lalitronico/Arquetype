@@ -68,8 +68,7 @@ export async function logActivity({
       action,
       resourceType,
       resourceId: resourceId || null,
-      metadata: metadata ? JSON.stringify(metadata) : null,
-      createdAt: new Date().toISOString(),
+      metadata: metadata || null,
     });
   } catch (error) {
     // Log error but don't throw - activity logging should not break operations

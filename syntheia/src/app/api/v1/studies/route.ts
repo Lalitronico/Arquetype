@@ -41,7 +41,7 @@ async function handleGet(
     .limit(Math.min(limit, 100))
     .offset(offset);
 
-  const results = await query.all();
+  const results = await query;
 
   // Filter by status if provided
   const filteredResults = status
@@ -83,7 +83,6 @@ async function handlePost(
     const { name, description, questions, panelConfig, sampleSize } = validated.data;
 
     const id = crypto.randomUUID();
-    const now = new Date().toISOString();
 
     await db.insert(studies).values({
       id,
@@ -91,12 +90,10 @@ async function handlePost(
       createdById: context.apiKeyId,
       name,
       description: description || null,
-      questions: JSON.stringify(questions),
-      panelConfig: panelConfig ? JSON.stringify(panelConfig) : null,
+      questions,
+      panelConfig: panelConfig || null,
       sampleSize,
       status: "draft",
-      createdAt: now,
-      updatedAt: now,
     });
 
     return NextResponse.json(
@@ -106,7 +103,7 @@ async function handlePost(
         description,
         status: "draft",
         sampleSize,
-        createdAt: now,
+        createdAt: new Date(),
         message: "Study created successfully",
       },
       { status: 201 }

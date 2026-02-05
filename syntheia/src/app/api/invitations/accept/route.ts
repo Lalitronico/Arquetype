@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
         .update(invitations)
         .set({
           status: "accepted",
-          acceptedAt: new Date().toISOString(),
+          acceptedAt: new Date(),
         })
         .where(eq(invitations.id, invitation.id));
 
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
       organizationId: invitation.organizationId,
       userId: session.user.id,
       role: invitation.role,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
     });
 
     // Update invitation status
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       .update(invitations)
       .set({
         status: "accepted",
-        acceptedAt: new Date().toISOString(),
+        acceptedAt: new Date(),
       })
       .where(eq(invitations.id, invitation.id));
 

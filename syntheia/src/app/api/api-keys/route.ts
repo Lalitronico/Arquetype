@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       organizationId,
       name,
       scopes,
-      expiresAt
+      expiresAt ? new Date(expiresAt) : undefined
     );
 
     // Log activity

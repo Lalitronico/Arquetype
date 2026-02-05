@@ -97,7 +97,7 @@ export async function GET() {
       .where(
         and(
           eq(studies.organizationId, org.id),
-          sql`${studies.completedAt} >= ${firstDayOfMonth.toISOString()}`
+          sql`${studies.completedAt} >= ${firstDayOfMonth}`
         )
       );
 

@@ -33,7 +33,8 @@ async function handleGet(
         eq(studies.organizationId, context.organizationId)
       )
     )
-    .get();
+    .limit(1)
+    .then((rows) => rows[0]);
 
   if (!study) {
     return NextResponse.json({ error: "Study not found" }, { status: 404 });
@@ -44,8 +45,8 @@ async function handleGet(
     name: study.name,
     description: study.description,
     status: study.status,
-    questions: JSON.parse(study.questions),
-    panelConfig: study.panelConfig ? JSON.parse(study.panelConfig) : null,
+    questions: study.questions,
+    panelConfig: study.panelConfig,
     sampleSize: study.sampleSize,
     creditsUsed: study.creditsUsed,
     createdAt: study.createdAt,
@@ -82,7 +83,8 @@ async function handlePatch(
         eq(studies.organizationId, context.organizationId)
       )
     )
-    .get();
+    .limit(1)
+    .then((rows) => rows[0]);
 
   if (!existing) {
     return NextResponse.json({ error: "Study not found" }, { status: 404 });
@@ -108,13 +110,13 @@ async function handlePatch(
     const { name, description, questions, panelConfig, sampleSize } = validated.data;
 
     const updates: Record<string, unknown> = {
-      updatedAt: new Date().toISOString(),
+      updatedAt: new Date(),
     };
 
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
-    if (questions !== undefined) updates.questions = JSON.stringify(questions);
-    if (panelConfig !== undefined) updates.panelConfig = panelConfig ? JSON.stringify(panelConfig) : null;
+    if (questions !== undefined) updates.questions = questions;
+    if (panelConfig !== undefined) updates.panelConfig = panelConfig || null;
     if (sampleSize !== undefined) updates.sampleSize = sampleSize;
 
     await db
@@ -161,7 +163,8 @@ async function handleDelete(
         eq(studies.organizationId, context.organizationId)
       )
     )
-    .get();
+    .limit(1)
+    .then((rows) => rows[0]);
 
   if (!existing) {
     return NextResponse.json({ error: "Study not found" }, { status: 404 });

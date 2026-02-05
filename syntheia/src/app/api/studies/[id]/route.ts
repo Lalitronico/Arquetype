@@ -119,14 +119,8 @@ export async function GET(
         .where(eq(responses.studyId, id));
 
       results = {
-        respondents: respondents.map((r) => ({
-          ...r,
-          personaData: JSON.parse(r.personaData),
-        })),
-        responses: allResponses.map((r) => ({
-          ...r,
-          distribution: r.distribution ? JSON.parse(r.distribution) : null,
-        })),
+        respondents,
+        responses: allResponses,
       };
     }
 
@@ -134,8 +128,6 @@ export async function GET(
       success: true,
       data: {
         ...study,
-        questions: JSON.parse(study.questions),
-        panelConfig: study.panelConfig ? JSON.parse(study.panelConfig) : null,
         results,
       },
     });
@@ -187,7 +179,7 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = UpdateStudySchema.parse(body);
 
-    const now = new Date().toISOString();
+    const now = new Date();
     const updateData: Record<string, unknown> = {
       updatedAt: now,
     };
@@ -202,9 +194,9 @@ export async function PATCH(
       }
     }
     if (validatedData.questions)
-      updateData.questions = JSON.stringify(validatedData.questions);
+      updateData.questions = validatedData.questions;
     if (validatedData.panelConfig)
-      updateData.panelConfig = JSON.stringify(validatedData.panelConfig);
+      updateData.panelConfig = validatedData.panelConfig;
     if (validatedData.sampleSize) updateData.sampleSize = validatedData.sampleSize;
 
     await db.update(studies).set(updateData).where(eq(studies.id, id));
@@ -213,13 +205,7 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      data: {
-        ...updatedStudy,
-        questions: JSON.parse(updatedStudy.questions),
-        panelConfig: updatedStudy.panelConfig
-          ? JSON.parse(updatedStudy.panelConfig)
-          : null,
-      },
+      data: updatedStudy,
     });
   } catch (error) {
     console.error("Error updating study:", error);

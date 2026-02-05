@@ -88,8 +88,8 @@ export async function PATCH(request: NextRequest) {
     const { name, image } = validated.data;
 
     // Build update object with only provided fields
-    const updateData: { name?: string; image?: string | null; updatedAt: string } = {
-      updatedAt: new Date().toISOString(),
+    const updateData: { name?: string; image?: string | null; updatedAt: Date } = {
+      updatedAt: new Date(),
     };
 
     if (name !== undefined) {

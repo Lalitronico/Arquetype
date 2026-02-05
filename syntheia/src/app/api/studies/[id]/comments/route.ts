@@ -196,7 +196,7 @@ export async function POST(
 
     // Create the comment
     const commentId = crypto.randomUUID();
-    const now = new Date().toISOString();
+    const now = new Date();
 
     await db.insert(studyComments).values({
       id: commentId,

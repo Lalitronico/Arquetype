@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const now = new Date().toISOString();
+  const now = new Date();
 
   try {
     switch (event.type) {

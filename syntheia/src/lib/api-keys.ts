@@ -38,21 +38,22 @@ export async function validateApiKey(key: string): Promise<{
       eq(apiKeys.keyHash, hash),
       isNull(apiKeys.revokedAt)
     ))
-    .get();
+    .limit(1)
+    .then((rows) => rows[0]);
 
   if (!apiKey) {
     return { valid: false };
   }
 
   // Check if expired
-  if (apiKey.expiresAt && new Date(apiKey.expiresAt) < new Date()) {
+  if (apiKey.expiresAt && apiKey.expiresAt < new Date()) {
     return { valid: false };
   }
 
   // Update last used
   await db
     .update(apiKeys)
-    .set({ lastUsedAt: new Date().toISOString() })
+    .set({ lastUsedAt: new Date() })
     .where(eq(apiKeys.id, apiKey.id));
 
   return {
@@ -69,7 +70,8 @@ export async function getOrganizationForUser(userId: string): Promise<string | n
     .select({ organizationId: organizationMembers.organizationId })
     .from(organizationMembers)
     .where(eq(organizationMembers.userId, userId))
-    .get();
+    .limit(1)
+    .then((rows) => rows[0]);
 
   return membership?.organizationId || null;
 }
@@ -89,7 +91,7 @@ export async function listApiKeys(organizationId: string) {
     })
     .from(apiKeys)
     .where(eq(apiKeys.organizationId, organizationId))
-    .all();
+;
 }
 
 // Create a new API key
@@ -97,7 +99,7 @@ export async function createApiKey(
   organizationId: string,
   name: string,
   scopes: string[] = ["read", "write"],
-  expiresAt?: string
+  expiresAt?: Date
 ): Promise<{ id: string; key: string; prefix: string }> {
   const { key, hash, prefix } = generateApiKey();
   const id = crypto.randomUUID();
@@ -110,7 +112,7 @@ export async function createApiKey(
     keyPrefix: prefix,
     scopes: scopes.join(","),
     expiresAt,
-    createdAt: new Date().toISOString(),
+    createdAt: new Date(),
   });
 
   // Return the key only once - it won't be retrievable again
@@ -121,7 +123,7 @@ export async function createApiKey(
 export async function revokeApiKey(apiKeyId: string, organizationId: string): Promise<boolean> {
   const result = await db
     .update(apiKeys)
-    .set({ revokedAt: new Date().toISOString() })
+    .set({ revokedAt: new Date() })
     .where(and(
       eq(apiKeys.id, apiKeyId),
       eq(apiKeys.organizationId, organizationId)

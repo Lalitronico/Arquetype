@@ -81,8 +81,8 @@ export async function logApiUsage(
     studyId,
     endpoint,
     creditsUsed,
-    metadata: metadata ? JSON.stringify(metadata) : null,
-    createdAt: new Date().toISOString(),
+    metadata: metadata ?? null,
+    createdAt: new Date(),
   });
 }
 

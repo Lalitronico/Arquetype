@@ -58,11 +58,9 @@ export async function GET(request: NextRequest) {
       .from(studies)
       .where(and(...conditions));
 
-    const parsedStudies = studiesList;
-
     return NextResponse.json({
       success: true,
-      data: parsedStudies,
+      data: studiesList,
       pagination: {
         total,
         limit,
@@ -92,7 +90,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = CreateStudySchema.parse(body);
 
-    const now = new Date().toISOString();
     const studyId = crypto.randomUUID();
 
     await db.insert(studies).values({
@@ -102,21 +99,16 @@ export async function POST(request: NextRequest) {
       name: validatedData.name,
       description: validatedData.description || null,
       status: "draft",
-      questions: JSON.stringify(validatedData.questions),
-      panelConfig: validatedData.panelConfig
-        ? JSON.stringify(validatedData.panelConfig)
-        : null,
+      questions: validatedData.questions,
+      panelConfig: validatedData.panelConfig || null,
       sampleSize: validatedData.sampleSize,
       creditsUsed: 0,
-      // Product/Service context fields
       productName: validatedData.productName || null,
       productDescription: validatedData.productDescription || null,
       brandName: validatedData.brandName || null,
       industry: validatedData.industry || null,
       productCategory: validatedData.productCategory || null,
       customContextInstructions: validatedData.customContextInstructions || null,
-      createdAt: now,
-      updatedAt: now,
     });
 
     // Fetch the created study
@@ -131,13 +123,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        data: {
-          ...createdStudy,
-          questions: JSON.parse(createdStudy.questions),
-          panelConfig: createdStudy.panelConfig
-            ? JSON.parse(createdStudy.panelConfig)
-            : null,
-        },
+        data: createdStudy,
       },
       { status: 201 }
     );

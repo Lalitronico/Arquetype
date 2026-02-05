@@ -33,10 +33,7 @@ export async function GET(
     }
 
     return NextResponse.json({
-      data: {
-        ...config[0],
-        config: JSON.parse(config[0].config),
-      },
+      data: config[0],
     });
   } catch (error) {
     console.error("Error getting panel config:", error);
@@ -90,7 +87,7 @@ export async function PUT(
     const { name, description, config, industry } = validated.data;
 
     const updates: Record<string, unknown> = {
-      updatedAt: new Date().toISOString(),
+      updatedAt: new Date(),
     };
 
     if (name !== undefined) {
@@ -102,7 +99,7 @@ export async function PUT(
     }
 
     if (config !== undefined) {
-      updates.config = JSON.stringify(config);
+      updates.config = config;
     }
 
     if (industry !== undefined) {
@@ -125,10 +122,7 @@ export async function PUT(
       .limit(1);
 
     return NextResponse.json({
-      data: {
-        ...updated[0],
-        config: JSON.parse(updated[0].config),
-      },
+      data: updated[0],
       message: "Panel configuration updated",
     });
   } catch (error) {

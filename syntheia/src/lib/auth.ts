@@ -6,7 +6,7 @@ import * as schema from "@/db/schema";
 export const auth = betterAuth({
   appName: "Arquetype",
   database: drizzleAdapter(db, {
-    provider: "sqlite",
+    provider: "pg",
     schema: {
       user: schema.users,
       session: schema.sessions,
@@ -28,6 +28,15 @@ export const auth = betterAuth({
       clientId: process.env.GITHUB_CLIENT_ID || "",
       clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
     },
+  },
+  trustedOrigins: [process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"],
+  advanced: {
+    useSecureCookies: process.env.NODE_ENV === "production",
+  },
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 100,
   },
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
@@ -70,8 +79,6 @@ export const auth = betterAuth({
             plan: "starter",
             creditsRemaining: 1000,
             creditsMonthly: 1000,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
           });
 
           await db.insert(schema.organizationMembers).values({
@@ -79,7 +86,6 @@ export const auth = betterAuth({
             organizationId: orgId,
             userId: user.id,
             role: "owner",
-            createdAt: new Date().toISOString(),
           });
         },
       },

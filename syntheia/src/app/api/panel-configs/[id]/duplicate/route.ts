@@ -59,13 +59,13 @@ export async function POST(
 
     const newName = name?.trim() || `${original[0].name} (Copy)`;
 
-    const now = new Date().toISOString();
+    const now = new Date();
     const newConfig = {
       id: generateId(),
       organizationId,
       name: newName,
       description: original[0].description,
-      config: original[0].config, // Keep the JSON string as is
+      config: original[0].config,
       industry: original[0].industry,
       isTemplate: false, // Duplicated configs are never templates
       createdAt: now,
@@ -75,10 +75,7 @@ export async function POST(
     await db.insert(panelConfigs).values(newConfig);
 
     return NextResponse.json({
-      data: {
-        ...newConfig,
-        config: JSON.parse(newConfig.config),
-      },
+      data: newConfig,
       message: "Panel configuration duplicated",
     }, { status: 201 });
   } catch (error) {

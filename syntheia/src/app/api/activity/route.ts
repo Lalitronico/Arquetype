@@ -73,12 +73,6 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .offset(offset);
 
-    // Parse metadata JSON
-    const parsedLogs = logs.map((log) => ({
-      ...log,
-      metadata: log.metadata ? JSON.parse(log.metadata) : null,
-    }));
-
     // Get total count for pagination
     const allLogs = await db
       .select({ id: activityLogs.id })
@@ -87,7 +81,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: parsedLogs,
+      data: logs,
       pagination: {
         total: allLogs.length,
         limit,

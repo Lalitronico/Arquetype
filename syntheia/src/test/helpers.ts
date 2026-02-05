@@ -15,7 +15,7 @@ export function createMockSession(overrides: Partial<{
     session: {
       id: "session-test-123",
       token: "mock-session-token",
-      expiresAt: new Date(Date.now() + 86400000).toISOString(),
+      expiresAt: new Date(Date.now() + 86400000),
     },
   };
 }
@@ -52,8 +52,8 @@ export function createMockOrganization(overrides: Record<string, unknown> = {}) 
     creditsMonthly: 1000,
     stripeCustomerId: null,
     stripeSubscriptionId: null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...overrides,
   };
 }
@@ -66,9 +66,9 @@ export function createMockStudy(overrides: Record<string, unknown> = {}) {
     name: "Test Study",
     description: "A test study",
     status: "draft",
-    questions: JSON.stringify([
+    questions: [
       { id: "q1", type: "likert", text: "How satisfied are you?" },
-    ]),
+    ],
     panelConfig: null,
     sampleSize: 100,
     creditsUsed: 0,
@@ -80,8 +80,8 @@ export function createMockStudy(overrides: Record<string, unknown> = {}) {
     customContextInstructions: null,
     currentPersona: 0,
     simulationStartedAt: null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
     completedAt: null,
     cancelledAt: null,
     ...overrides,

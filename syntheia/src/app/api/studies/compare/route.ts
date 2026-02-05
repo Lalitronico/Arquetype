@@ -18,7 +18,7 @@ interface QuestionStats {
 interface StudyComparison {
   id: string;
   name: string;
-  completedAt: string | null;
+  completedAt: Date | null;
   sampleSize: number;
   questions: QuestionStats[];
 }
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     for (const study of studyList) {
       const studyResponses = responsesByStudy.get(study.id) || [];
 
-      const questions = JSON.parse(study.questions) as Array<{
+      const questions = study.questions as Array<{
         id: string;
         type: string;
         text: string;
@@ -236,7 +236,7 @@ interface TrendData {
   dataPoints: Array<{
     studyId: string;
     studyName: string;
-    date: string | null;
+    date: Date | null;
     mean: number;
     npsScore?: number;
   }>;

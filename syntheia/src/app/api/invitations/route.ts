@@ -182,8 +182,8 @@ export async function POST(request: NextRequest) {
       invitedBy: session.user.id,
       token,
       status: "pending",
-      expiresAt: expiresAt.toISOString(),
-      createdAt: new Date().toISOString(),
+      expiresAt,
+      createdAt: new Date(),
     });
 
     // Log the activity

@@ -69,7 +69,7 @@ export async function POST(
       );
     }
 
-    const now = new Date().toISOString();
+    const now = new Date();
 
     // Mark study as cancelled
     await db
@@ -113,7 +113,7 @@ export async function POST(
           simulationStartedAt: null,
           cancelledAt: null,
           creditsUsed: 0,
-          updatedAt: new Date().toISOString(),
+          updatedAt: new Date(),
         })
         .where(eq(studies.id, studyId));
 

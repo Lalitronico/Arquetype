@@ -23,7 +23,7 @@ async function handleGet(
   }
 
   // Get the study
-  const study = await db
+  const [study] = await db
     .select()
     .from(studies)
     .where(
@@ -32,7 +32,7 @@ async function handleGet(
         eq(studies.organizationId, context.organizationId)
       )
     )
-    .get();
+    .limit(1);
 
   if (!study) {
     return NextResponse.json({ error: "Study not found" }, { status: 404 });
@@ -49,25 +49,23 @@ async function handleGet(
   }
 
   // Get respondents
-  const respondents = await db
+  const respondentsList = await db
     .select()
     .from(syntheticRespondents)
-    .where(eq(syntheticRespondents.studyId, studyId))
-    .all();
+    .where(eq(syntheticRespondents.studyId, studyId));
 
   // Get all responses
   const allResponses = await db
     .select()
     .from(responses)
-    .where(eq(responses.studyId, studyId))
-    .all();
+    .where(eq(responses.studyId, studyId));
 
-  // Parse questions
-  const questions = JSON.parse(study.questions);
+  // Questions are already parsed (jsonb)
+  const questions = study.questions as Array<Record<string, unknown>>;
 
   // Build results per respondent
-  const respondentResults = respondents.map((respondent) => {
-    const persona = JSON.parse(respondent.personaData);
+  const respondentResults = respondentsList.map((respondent) => {
+    const persona = respondent.personaData as Record<string, unknown>;
     const respondentResponses = allResponses.filter(
       (r) => r.respondentId === respondent.id
     );
@@ -87,7 +85,7 @@ async function handleGet(
         textResponse: r.textResponse,
         explanation: r.explanation,
         confidence: r.confidence,
-        distribution: r.distribution ? JSON.parse(r.distribution) : null,
+        distribution: r.distribution,
       })),
     };
   });
@@ -110,7 +108,7 @@ async function handleGet(
           distribution[rating] = (distribution[rating] || 0) + 1;
         }
 
-        summary[question.id] = {
+        summary[question.id as string] = {
           average: Math.round(average * 100) / 100,
           distribution,
           count: ratings.length,
@@ -130,7 +128,7 @@ async function handleGet(
     questions,
     respondents: respondentResults,
     summary,
-    totalRespondents: respondents.length,
+    totalRespondents: respondentsList.length,
     totalResponses: allResponses.length,
   });
 }

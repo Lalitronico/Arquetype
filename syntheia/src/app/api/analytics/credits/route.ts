@@ -68,8 +68,8 @@ export async function GET(request: NextRequest) {
         and(
           eq(studies.organizationId, org.id),
           eq(studies.status, "completed"),
-          sql`${studies.completedAt} >= ${startDate.toISOString()}`,
-          sql`${studies.completedAt} <= ${endDate.toISOString()}`
+          sql`${studies.completedAt} >= ${startDate}`,
+          sql`${studies.completedAt} <= ${endDate}`
         )
       )
       .orderBy(desc(studies.completedAt));
@@ -84,8 +84,8 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           eq(apiUsageLogs.organizationId, org.id),
-          sql`${apiUsageLogs.createdAt} >= ${startDate.toISOString()}`,
-          sql`${apiUsageLogs.createdAt} <= ${endDate.toISOString()}`
+          sql`${apiUsageLogs.createdAt} >= ${startDate}`,
+          sql`${apiUsageLogs.createdAt} <= ${endDate}`
         )
       );
 
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
     // Add dashboard usage from completed studies
     for (const study of studiesInRange) {
       if (study.completedAt && study.creditsUsed) {
-        const dateStr = study.completedAt.split("T")[0];
+        const dateStr = study.completedAt.toISOString().split("T")[0];
         const existing = dailyMap.get(dateStr);
         if (existing) {
           existing.creditsUsed += study.creditsUsed;
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
     // Add API usage
     for (const log of apiLogsInRange) {
       if (log.createdAt && log.creditsUsed) {
-        const dateStr = log.createdAt.split("T")[0];
+        const dateStr = log.createdAt.toISOString().split("T")[0];
         const existing = dailyMap.get(dateStr);
         if (existing) {
           existing.creditsUsed += log.creditsUsed;

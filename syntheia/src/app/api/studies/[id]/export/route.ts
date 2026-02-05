@@ -86,7 +86,7 @@ export async function GET(
       .from(responses)
       .where(eq(responses.studyId, studyId));
 
-    const questions = JSON.parse(study.questions) as Array<{
+    const questions = study.questions as Array<{
       id: string;
       type: string;
       text: string;
@@ -94,7 +94,7 @@ export async function GET(
 
     // Build respondent map
     const respondentMap = new Map(
-      respondents.map((r) => [r.id, JSON.parse(r.personaData)])
+      respondents.map((r) => [r.id, r.personaData as Record<string, Record<string, unknown>>])
     );
 
     // Group responses by respondent
@@ -128,13 +128,14 @@ export async function GET(
       // Data rows
       for (const [respondentId, persona] of respondentMap) {
         const respondentResponses = responsesByRespondent.get(respondentId) || [];
+        const demographics = (persona.demographics || {}) as Record<string, unknown>;
         const row: string[] = [
           respondentId,
-          String(persona.demographics?.age || ""),
-          persona.demographics?.gender || "",
-          persona.demographics?.location || "",
-          persona.demographics?.incomeLevel || "",
-          persona.demographics?.education || "",
+          String(demographics.age || ""),
+          String(demographics.gender || ""),
+          String(demographics.location || ""),
+          String(demographics.incomeLevel || ""),
+          String(demographics.education || ""),
         ];
 
         for (const question of questions) {
@@ -177,14 +178,14 @@ export async function GET(
         questions: questions,
         respondents: respondents.map((r) => ({
           id: r.id,
-          persona: JSON.parse(r.personaData),
+          persona: r.personaData,
           responses: (responsesByRespondent.get(r.id) || []).map((resp) => ({
             questionId: resp.questionId,
             rating: resp.rating,
             textResponse: resp.textResponse,
             explanation: resp.explanation,
             confidence: resp.confidence,
-            distribution: resp.distribution ? JSON.parse(resp.distribution) : null,
+            distribution: resp.distribution ?? null,
           })),
         })),
         summary: generateSummary(questions, allResponses),

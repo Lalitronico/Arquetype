@@ -90,7 +90,7 @@ export async function GET() {
       .where(
         and(
           eq(apiUsageLogs.organizationId, organizationId),
-          sql`${apiUsageLogs.createdAt} >= ${thirtyDaysAgo.toISOString()}`
+          sql`${apiUsageLogs.createdAt} >= ${thirtyDaysAgo}`
         )
       );
 

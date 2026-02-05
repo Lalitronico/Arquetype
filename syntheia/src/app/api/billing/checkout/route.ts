@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
         .update(organizations)
         .set({
           stripeCustomerId: customerId,
-          updatedAt: new Date().toISOString(),
+          updatedAt: new Date(),
         })
         .where(eq(organizations.id, org.id));
     }

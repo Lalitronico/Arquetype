@@ -25,7 +25,7 @@ async function handlePost(
   }
 
   // Get the study
-  const study = await db
+  const [study] = await db
     .select()
     .from(studies)
     .where(
@@ -34,7 +34,7 @@ async function handlePost(
         eq(studies.organizationId, context.organizationId)
       )
     )
-    .get();
+    .limit(1);
 
   if (!study) {
     return NextResponse.json({ error: "Study not found" }, { status: 404 });
@@ -55,11 +55,11 @@ async function handlePost(
   }
 
   // Check credits
-  const org = await db
+  const [org] = await db
     .select()
     .from(organizations)
     .where(eq(organizations.id, context.organizationId))
-    .get();
+    .limit(1);
 
   if (!org) {
     return NextResponse.json({ error: "Organization not found" }, { status: 404 });
@@ -80,18 +80,18 @@ async function handlePost(
   // Update study status to running
   await db
     .update(studies)
-    .set({ status: "running", updatedAt: new Date().toISOString() })
+    .set({ status: "running", updatedAt: new Date() })
     .where(eq(studies.id, studyId));
 
   try {
-    // Parse study data
-    const questions = JSON.parse(study.questions) as Array<{
+    // Study data (jsonb columns are already parsed)
+    const questions = study.questions as Array<{
       id: string;
       type: "likert" | "nps" | "multiple_choice" | "ranking" | "open_ended";
       text: string;
       options?: string[];
     }>;
-    const panelConfig = study.panelConfig ? JSON.parse(study.panelConfig) : {};
+    const panelConfig = (study.panelConfig || {}) as Record<string, unknown>;
 
     // Generate panel
     const presetConfig = panelConfig.preset
@@ -103,9 +103,9 @@ async function handlePost(
       ...presetConfig,
       demographics: {
         ...presetConfig?.demographics,
-        ...panelConfig.demographics,
+        ...(panelConfig.demographics as Record<string, unknown>),
       },
-      context: panelConfig.context,
+      context: panelConfig.context as Record<string, unknown>,
     });
 
     // Map questions to SSR engine format
@@ -123,13 +123,13 @@ async function handlePost(
     );
 
     // Save respondents and responses to database (batch inserts)
-    const now = new Date().toISOString();
+    const now = new Date();
 
     // Collect all respondent rows
     const allRespondentRows = simulationResults.map((_, i) => ({
       id: crypto.randomUUID(),
       studyId,
-      personaData: JSON.stringify(panel[i]),
+      personaData: panel[i],
       createdAt: now,
     }));
 
@@ -149,14 +149,12 @@ async function handlePost(
         textResponse: response.rawTextResponse || null,
         explanation: response.explanation,
         confidence: response.confidence,
-        distribution: response.distribution
-          ? JSON.stringify(response.distribution)
-          : null,
+        distribution: response.distribution || null,
         createdAt: now,
       }))
     );
 
-    // Insert responses in chunks of 100 (SQLite variable limit ~999)
+    // Insert responses in chunks of 100
     const CHUNK_SIZE = 100;
     for (let i = 0; i < allResponseRows.length; i += CHUNK_SIZE) {
       const chunk = allResponseRows.slice(i, i + CHUNK_SIZE);
@@ -178,7 +176,7 @@ async function handlePost(
       .update(organizations)
       .set({
         creditsRemaining: org.creditsRemaining - creditsNeeded,
-        updatedAt: now,
+        updatedAt: new Date(),
       })
       .where(eq(organizations.id, context.organizationId));
 
@@ -203,7 +201,7 @@ async function handlePost(
     // Revert status on error
     await db
       .update(studies)
-      .set({ status: "draft", updatedAt: new Date().toISOString() })
+      .set({ status: "draft", updatedAt: new Date() })
       .where(eq(studies.id, studyId));
 
     console.error("API v1 study run error:", error);

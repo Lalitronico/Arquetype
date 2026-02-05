@@ -75,7 +75,7 @@ export async function POST(
     }
 
     // Mark study as running with start time
-    const simulationStartTime = new Date().toISOString();
+    const simulationStartTime = new Date();
     await db
       .update(studies)
       .set({
@@ -89,14 +89,14 @@ export async function POST(
     // Log activity
     await logStudyStarted(organizationId, session.user.id, studyId, study.name);
 
-    // Parse study data
-    const questions = JSON.parse(study.questions) as Array<{
+    // Study data (jsonb columns are already parsed)
+    const questions = study.questions as Array<{
       id: string;
       type: "likert" | "nps" | "multiple_choice" | "ranking" | "open_ended";
       text: string;
       options?: string[];
     }>;
-    const panelConfig = study.panelConfig ? JSON.parse(study.panelConfig) : {};
+    const panelConfig = (study.panelConfig || {}) as Record<string, unknown>;
 
     // Generate panel
     const presetConfig = panelConfig.preset
@@ -107,9 +107,9 @@ export async function POST(
       ...presetConfig,
       demographics: {
         ...presetConfig?.demographics,
-        ...panelConfig.demographics,
+        ...(panelConfig.demographics as Record<string, unknown>),
       },
-      context: panelConfig.context,
+      context: panelConfig.context as Record<string, unknown>,
       count: study.sampleSize, // Must be LAST to override preset defaults
     });
 
@@ -146,7 +146,7 @@ export async function POST(
           .update(studies)
           .set({
             currentPersona: current,
-            updatedAt: new Date().toISOString(),
+            updatedAt: new Date(),
           })
           .where(eq(studies.id, studyId));
       },
@@ -175,13 +175,13 @@ export async function POST(
     }
 
     // Save respondents and responses to database (batch inserts)
-    const now = new Date().toISOString();
+    const now = new Date();
 
     // Collect all respondent rows
     const allRespondentRows = simulationResults.map((_, i) => ({
       id: crypto.randomUUID(),
       studyId,
-      personaData: JSON.stringify(panel[i]),
+      personaData: panel[i],
       createdAt: now,
     }));
 
@@ -201,14 +201,12 @@ export async function POST(
         textResponse: response.rawTextResponse || null,
         explanation: response.explanation,
         confidence: response.confidence,
-        distribution: response.distribution
-          ? JSON.stringify(response.distribution)
-          : null,
+        distribution: response.distribution || null,
         createdAt: now,
       }))
     );
 
-    // Insert responses in chunks of 100 (SQLite variable limit ~999)
+    // Insert responses in chunks of 100
     const CHUNK_SIZE = 100;
     for (let i = 0; i < allResponseRows.length; i += CHUNK_SIZE) {
       const chunk = allResponseRows.slice(i, i + CHUNK_SIZE);
@@ -231,7 +229,7 @@ export async function POST(
       .update(organizations)
       .set({
         creditsRemaining: org.creditsRemaining - creditsNeeded,
-        updatedAt: now,
+        updatedAt: new Date(),
       })
       .where(eq(organizations.id, organizationId));
 
@@ -270,7 +268,7 @@ export async function POST(
       const { id: studyId } = await params;
       await db
         .update(studies)
-        .set({ status: "draft", updatedAt: new Date().toISOString() })
+        .set({ status: "draft", updatedAt: new Date() })
         .where(eq(studies.id, studyId));
     } catch {
       // Ignore error resetting status

@@ -5,7 +5,7 @@
 ### Sprint 1-2: Foundation
 - [x] Next.js 16 setup with TypeScript
 - [x] Better Auth authentication system
-- [x] SQLite database with Drizzle ORM
+- [x] PostgreSQL database with Drizzle ORM (migrated from SQLite)
 - [x] Organization and user management
 - [x] Basic UI components with shadcn/ui
 
@@ -36,6 +36,9 @@
 - [x] Demographic segment comparison analysis
 - [x] Word cloud visualization for text responses
 - [x] Demographic insights generation
+
+### Sprint 10: UX Polish
+- [x] Onboarding dialog redesign (modern hero layout, dot indicators, transitions, brand dot icon)
 
 ---
 
@@ -107,51 +110,83 @@
 
 ---
 
-## Technical Debt
+## Technical Debt ✅
 
-- [ ] Add comprehensive test suite
-- [ ] Implement proper error boundaries
-- [ ] Add request validation with Zod
-- [ ] Optimize database queries
-- [ ] Add caching layer for frequent queries
-- [ ] Migrate middleware to Next.js proxy pattern
+- [x] Add comprehensive test suite (Vitest — 67 tests)
+- [x] Implement proper error boundaries (7 error.tsx + 4 loading.tsx + 2 not-found.tsx)
+- [x] Add request validation with Zod (centralized schemas + validateBody helper)
+- [x] Optimize database queries (COUNT, projection, N+1, batch inserts, SQL aggregation)
+- [x] Add caching layer for frequent queries (in-memory TTL cache with invalidation)
+- [x] Migrate middleware to Next.js pattern (cookie-based edge middleware)
 
 ---
 
 ## Production Readiness
 
-### Pre-Production (Before Launch)
+### Code Changes (Completed)
+- [x] Migrate schema from SQLite to PostgreSQL (`pgTable`, `jsonb`, `timestamp`, `boolean`, FK indexes)
+- [x] Switch driver from `@libsql/client` to `postgres` (postgres.js)
+- [x] Update Drizzle config for PostgreSQL dialect
+- [x] Update Better Auth provider to `"pg"` with `useSecureCookies`, rate limiting, `trustedOrigins`
+- [x] Remove all `JSON.parse`/`JSON.stringify` on jsonb columns (18+ files)
+- [x] Update all timestamp handling (`new Date()` instead of `.toISOString()` for DB writes)
+- [x] Replace `.get()`/`.all()` libsql methods with standard Drizzle patterns
+- [x] Add security headers (HSTS, X-Frame-Options, CSP, Referrer-Policy, Permissions-Policy)
+- [x] Add CORS for public API v1 with OPTIONS preflight
+- [x] Add Stripe webhook middleware bypass
+- [x] Create `vercel.json` (5-min timeout for simulation routes)
+- [x] Update `.env.example` for production (Supabase, Stripe live, OAuth)
+- [x] 0 TypeScript errors, 67/67 tests pass, clean production build
 
-#### Database Migration
-- [ ] Create Supabase project (free tier available)
-- [ ] Migrate SQLite schema to PostgreSQL
-- [ ] Update Drizzle config for PostgreSQL adapter
-- [ ] Migrate existing data (if any)
-- [ ] Update environment variables for production
+### Manual Setup (Next Session)
+- [ ] Create Supabase project → get Transaction pooler connection string (port 6543)
+- [ ] Run `npx drizzle-kit generate` then `npx drizzle-kit push` against Supabase
+- [ ] Create Vercel project → connect GitHub repo, add all env vars
+- [ ] Configure Google OAuth credentials (production redirect URLs)
+- [ ] Configure GitHub OAuth credentials (production redirect URLs)
+- [ ] Set secure BETTER_AUTH_SECRET (`openssl rand -base64 32`)
+- [ ] Create Stripe live products → get live Price IDs (starter/growth/scale)
+- [ ] Add Stripe webhook endpoint (`https://yourdomain.com/api/billing/webhook`)
+- [ ] Deploy to Vercel (push to main)
+- [ ] Test end-to-end: signup → create study → run simulation → billing
 
-#### Authentication
-- [ ] Configure Google OAuth credentials (production)
-- [ ] Configure GitHub OAuth credentials (production)
-- [ ] Set secure BETTER_AUTH_SECRET (32+ random chars)
-- [ ] Enable email verification
+---
 
-#### Payments
-- [ ] Create Stripe production account
-- [ ] Configure production Price IDs
-- [ ] Set up Stripe webhook endpoint
-- [ ] Test payment flow end-to-end
+## Validation Study — Synthetic vs. Real Respondents
 
-#### Infrastructure
-- [ ] Deploy to Vercel/Railway/Fly.io
-- [ ] Configure custom domain
-- [ ] Set up SSL certificates
-- [ ] Configure environment variables
+Scientific comparison between Arquetype synthetic responses and real survey data
+to validate the SSR methodology. Dual purpose: academic publication + product proof.
 
-#### Security Checklist
-- [ ] Rotate all API keys for production
-- [ ] Enable rate limiting on all endpoints
-- [ ] Review CORS configuration
-- [ ] Add security headers
+> **Prerequisite:** Production Readiness must be complete. The study runs on the
+> final deployed platform to ensure reproducibility.
+
+### Study Design
+- [ ] Select a completed real study from the market research firm
+- [ ] Document original methodology (sample size, demographics, questions)
+- [ ] Define comparison metrics (mean differences, distribution shape, effect sizes)
+- [ ] Design the replication protocol (same questions, same demographic profiles)
+- [ ] Pre-register hypotheses and statistical tests
+
+### Simulation Execution
+- [ ] Recreate the original survey in Arquetype (identical questions and scales)
+- [ ] Configure persona panel to match original sample demographics
+- [ ] Run simulation on production platform
+- [ ] Export both real and synthetic datasets for analysis
+
+### Statistical Comparison
+- [ ] Descriptive statistics comparison (means, medians, std devs, distributions)
+- [ ] Inferential tests (t-tests, chi-square, KS tests for distribution similarity)
+- [ ] Effect size analysis (Cohen's d, Cramér's V)
+- [ ] Correlation analysis between real and synthetic response patterns
+- [ ] Demographic subgroup comparison (do synthetic segments match real ones?)
+- [ ] Sensitivity analysis across different question types
+
+### Article Preparation
+- [ ] Write methodology section describing SSR engine and study design
+- [ ] Produce comparison tables and visualizations
+- [ ] Draft discussion: where synthetic matches real, where it diverges, and why
+- [ ] Identify target journal(s) for submission
+- [ ] Internal review and revision cycle
 
 ---
 
@@ -160,4 +195,4 @@
 - Current rate limit: 40 requests/minute to Anthropic API
 - **Parallel processing implemented**: 4 personas processed in parallel with rate limit management
 - 30-minute timeout configured for large simulations (400+ personas)
-- **SQLite is perfect for development; migrate to Supabase/PostgreSQL for production**
+- **PostgreSQL via Supabase for production** (code ready, manual setup pending)

@@ -49,13 +49,7 @@ export async function GET(request: NextRequest) {
       .where(and(...conditions))
       .orderBy(desc(panelConfigs.updatedAt));
 
-    // Parse the JSON config field
-    const parsedConfigs = configs.map((config) => ({
-      ...config,
-      config: JSON.parse(config.config),
-    }));
-
-    return NextResponse.json({ data: parsedConfigs });
+    return NextResponse.json({ data: configs });
   } catch (error) {
     console.error("Error listing panel configs:", error);
     return NextResponse.json(
@@ -82,17 +76,14 @@ export async function POST(request: NextRequest) {
 
     const { name, description, config, industry, isTemplate } = validated.data;
 
-    const now = new Date().toISOString();
     const newConfig = {
       id: generateId(),
       organizationId,
       name,
       description,
-      config: JSON.stringify(config),
+      config,
       industry,
       isTemplate,
-      createdAt: now,
-      updatedAt: now,
     };
 
     await db.insert(panelConfigs).values(newConfig);
@@ -101,10 +92,7 @@ export async function POST(request: NextRequest) {
     appCache.invalidatePrefix("templates:");
 
     return NextResponse.json({
-      data: {
-        ...newConfig,
-        config: config, // Return parsed config
-      },
+      data: newConfig,
       message: "Panel configuration saved",
     }, { status: 201 });
   } catch (error) {
